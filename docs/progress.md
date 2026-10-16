@@ -3,6 +3,27 @@
 Results are reported as **PASSED / FAILED / SKIPPED / NOT RUN**, exactly as
 observed. Nothing is listed as passed unless it was executed. Newest first.
 
+## 2026-10-16 — M1.4 (part A): QK-Norm
+
+### What was done
+- `src/qwen3_scratch/layers/qk_norm.py`: `apply_qk_norm` and `QKNorm`, reusing the
+  M1.1 `RMSNorm` (no new kernel, no RMSNorm changes needed).
+- Tests: `tests/test_qk_norm.py` (44), `tests/parity/test_qk_norm_hf.py` (9).
+- `docs/components/qk_norm.md`; decisions D-021 (design) and D-022 (M1 renumbering).
+- Baseline before the change: 322 passed, 2 skipped.
+
+### Validation (assistant sandbox: Python 3.11.17, torch 2.14.1 on CPU, transformers 5.20.0)
+
+| Check | Result |
+|---|---|
+| `python scripts/check_env.py` | PASSED |
+| ruff check / format | PASSED / PASSED |
+| `python -m pytest` (with transformers + matplotlib) | PASSED: 375 passed, 2 skipped |
+| `python -m pytest` (transformers and matplotlib simulated missing) | PASSED: 332 passed, 6 skipped |
+| `tests/test_qk_norm.py` | PASSED: 44 passed (shapes for MHA/GQA/MQA head counts, manual example, per-head independence, layout independence, logit bound, separate gradients, gradcheck, eps, near-zero, fp32 vs fp64, invalid shapes) |
+| `tests/parity/test_qk_norm_hf.py` | PASSED: 9 passed, **bit-identical** to `Qwen3Attention.q_norm/k_norm` applied in HF's `[B, T, N, D]` order (fp32, bf16) |
+| Same on Fedora | NOT RUN by the assistant |
+
 ## 2026-10-16 — M1.3: Rotary position embedding
 
 ### What was done

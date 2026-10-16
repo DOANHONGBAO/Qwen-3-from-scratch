@@ -46,7 +46,7 @@ softmax — discrepancies X5–X7), we follow HF so bf16 parity tests can be tig
 
 ## D-009 · 2026-10-16 · Real weight tying
 When `tie_word_embeddings` is true the LM head will share the embedding
-parameter (one tensor), not hold a copy. (Discrepancy X4.) **Proposed — M1.8.**
+parameter (one tensor), not hold a copy. (Discrepancy X4.) **Proposed — M1.6 (was M1.8 before D-022).**
 
 ## D-010 · 2026-10-16 · License Apache-2.0
 Matches the licenses of R1, R6 and the Qwen3 weights, and keeps attribution
@@ -121,3 +121,17 @@ as positions (`make_position_ids(T, offset=cache_len)`), not as a hidden counter
 the model (unlike R2's `current_pos`). This keeps the module stateless and maps 1:1
 to the C++ port. An optional precomputed table (`max_position_embeddings`) is a
 pure optimisation, bit-identical to direct computation. **Accepted.**
+
+## D-021 · 2026-10-16 · QK-Norm reuses RMSNorm; attention owns `q_norm`/`k_norm` directly
+No new kernel: `apply_qk_norm` validates `[B, N, T, D]` shapes and calls the two
+`RMSNorm(head_dim)` modules. `GroupedQueryAttention` stores them as `q_norm` /
+`k_norm` attributes, so state-dict keys equal HF's
+(`self_attn.q_norm.weight`). `QKNorm` is a thin standalone wrapper around the same
+function. We normalise after the head transpose; HF normalises before it. The
+results are bit-identical (tested), so the layout choice is free. **Accepted.**
+
+## D-022 · 2026-10-16 · Roadmap renumbering of M1
+The maintainer's task plan merges QK-Norm, causal masking and GQA into **M1.4**.
+The decoder block becomes M1.5, the model M1.6 and the walkthrough notebook
+M1.7. Earlier references to "M1.5 causal mask" / "M1.6 GQA" refer to M1.4.
+**Accepted.**
