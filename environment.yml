@@ -1,0 +1,23 @@
+# Conda environment for local CPU-only development (Fedora Linux, no CUDA).
+#
+#   conda env create -f environment.yml
+#   conda activate qwen3-scratch
+#   python scripts/check_env.py
+#
+# Pinned versions below are the ones validated in M0 (see docs/progress.md).
+# torch comes from the official PyTorch CPU wheel index so that no CUDA
+# libraries are downloaded. Optional extras (notebooks, hf, kaggle) are NOT
+# installed here; add them later with e.g. `pip install -e ".[notebooks]"`.
+name: qwen3-scratch
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cpu
+      - torch==2.14.1
+      - numpy==2.4.6
+      - pytest==9.1.1
+      - ruff==0.17.1
+      - -e .

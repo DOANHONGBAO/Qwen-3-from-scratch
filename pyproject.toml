@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qwen3-scratch"
+dynamic = ["version"]
+description = "Educational, test-driven implementation of the Qwen3 dense Transformer: PyTorch first, then C++20."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "DOANHONGBAO" }]
+requires-python = ">=3.11,<3.14"
+classifiers = [
+  "Programming Language :: Python :: 3.11",
+  "License :: OSI Approved :: Apache Software License",
+  "Intended Audience :: Education",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# Core runtime dependencies only. On a CPU-only machine install the CPU wheel of
+# torch from https://download.pytorch.org/whl/cpu (see environment.yml and
+# docs/environment.md); the generic PyPI wheel for Linux bundles CUDA libraries.
+dependencies = [
+  "torch>=2.6,<3",
+  "numpy>=1.26",  # avoids torch's NumPy warning; used for test fixtures/exports
+]
+
+[project.optional-dependencies]
+# Development tooling (needed from M0 onwards).
+dev = [
+  "pytest>=8.3",
+  "ruff>=0.6",
+]
+# Interactive notebooks for explanations and experiments.
+notebooks = [
+  "jupyterlab>=4.2",
+  "matplotlib>=3.8",
+]
+# M2: numerical verification against the official Hugging Face implementation,
+# tokenization and checkpoint loading. Not installed during M0.
+hf = [
+  "transformers>=4.51",
+  "huggingface-hub>=0.24",
+  "safetensors>=0.4",
+  "tokenizers>=0.21",
+]
+# Kaggle CLI for optional remote GPU experiments (M4). Credentials live outside
+# the repository; see docs/kaggle.md.
+kaggle = [
+  "kaggle>=1.7",
+]
+
+[project.urls]
+Repository = "https://github.com/DOANHONGBAO/Qwen-3-from-scratch"
+
+[tool.setuptools.dynamic]
+version = { attr = "qwen3_scratch.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+  "gpu: requires a CUDA device (auto-skipped when CUDA is unavailable; run on Kaggle)",
+  "weights: requires local official Qwen3 weights/config via QWEN3_WEIGHTS_DIR (auto-skipped otherwise)",
+  "slow: long-running test; deselect with -m 'not slow'",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["documents"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "NPY"]
+
+[tool.ruff.format]
+quote-style = "double"

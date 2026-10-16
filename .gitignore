@@ -1,0 +1,77 @@
+# ---------------------------------------------------------------- secrets
+# Never commit credentials. Kaggle credentials belong in ~/.kaggle/, not here.
+.env
+.env.*
+*.pem
+*.key
+kaggle.json
+access_token
+.kaggle/
+.netrc
+.git-credentials
+
+# -------------------------------------------- model weights and datasets
+# Checkpoints are downloaded on demand (M2+) and must never be committed.
+*.safetensors
+*.bin
+*.pth
+*.pt
+*.ckpt
+*.gguf
+*.onnx
+*.npz
+*.npy
+/checkpoints/
+/weights/
+/models/
+/qwen3/
+/hf_cache/
+.cache/
+/data/
+/datasets/
+
+# -------------------------------------------------------------- python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# ----------------------------------------------------- build artifacts
+build/
+cmake-build-*/
+/out/
+compile_commands.json
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# ------------------------------------------------- experiment outputs
+/runs/
+/outputs/
+/logs/
+/wandb/
+smoke_test_report.json
+
+# ------------------------------------------------------------- editors
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# ----------------------------------------------- local reference copies
+# Local copies of upstream reference files (HF modeling code, Raschka notebook).
+# They are third-party code under their own licenses; we link to them instead
+# of redistributing them. See docs/references.md.
+/documents/
