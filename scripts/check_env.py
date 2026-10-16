@@ -81,8 +81,15 @@ def main() -> int:
         print(f"FAILED  import qwen3_scratch: {exc}")
         if problems:
             print("Fix the warnings above first (wrong env / wrong Python), then:")
-        print("  conda env create -f environment.yml   # or: bash scripts/setup_env.sh")
-        print("  conda activate qwen3-scratch")
+            print("  conda env create -f environment.yml   # or: bash scripts/setup_env.sh")
+            print("  conda activate qwen3-scratch")
+        else:
+            print("The interpreter is correct but the project is not installed in it. Run:")
+            print(
+                "  python -m pip install torch==2.14.1 "
+                "--index-url https://download.pytorch.org/whl/cpu"
+            )
+            print('  python -m pip install -e ".[dev]"')
         print("  python scripts/check_env.py")
         return 1
 
