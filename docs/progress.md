@@ -3,6 +3,43 @@
 Results are reported as **PASSED / FAILED / SKIPPED / NOT RUN**, exactly as
 observed. Nothing is listed as passed unless it was executed. Newest first.
 
+## 2026-10-16 — M1.5: Qwen3 decoder block
+
+### What was done
+- Baseline before the change: 452 passed, 2 skipped (repository identical to the pushed `8260394`).
+- `src/qwen3_scratch/layers/decoder.py`: `Qwen3DecoderLayer` (`input_layernorm`,
+  `self_attn`, `post_attention_layernorm`, `mlp`) and `DecoderTrace`. It only wires
+  M1.1–M1.4 components; no earlier module needed changes.
+- Tests: `tests/test_decoder.py` (29), `tests/parity/test_decoder_hf.py` (7).
+- `notebooks/05_decoder_block.ipynb`, `docs/components/decoder.md`,
+  `scripts/decoder_report.py`; decision D-026.
+
+### Validation (assistant sandbox: Python 3.11.17, torch 2.14.1 on CPU, transformers 5.20.0)
+
+| Check | Result |
+|---|---|
+| `python scripts/check_env.py` | PASSED |
+| ruff check / format | PASSED / PASSED (59 files) |
+| `python -m pytest` (with transformers + matplotlib) | PASSED: 489 passed, 2 skipped |
+| `python -m pytest` (transformers and matplotlib simulated missing) | PASSED: 426 passed, 8 skipped |
+| `tests/test_decoder.py` | PASSED: 29 passed (shapes for GQA/MHA/MQA/D>H/N, manual composition, wrong orderings differ, norm placement, exact identity ablation incl. identity gradient, attention-only / MLP-only, pre-norm scale property, leakage, mask forwarding, gradients, `gradcheck`, determinism, invalid inputs, parameter count = config estimate) |
+| `tests/parity/test_decoder_hf.py` | PASSED: 7 passed; input norm, attention output, first residual, post-attention norm, MLP output and output **bit-identical** to HF `Qwen3DecoderLayer` (eager) for GQA/MHA/MQA in fp32 and bf16; fp32 gradients for the input and all parameters bit-identical |
+| `notebooks/05_decoder_block.ipynb` executed with `nbclient` (1 plot inspected, 0 errors) | PASSED |
+| Same on Fedora | NOT RUN by the assistant |
+
+`python scripts/decoder_report.py` (0.6B layer sizes, `x: (1, 64, 1024)`):
+
+| dtype | ours vs | tensor | max_abs | mean_abs | rel_l2 |
+|---|---|---|---|---|---|
+| float32 | float64 layer | attn_output | 9.869e-07 | 1.006e-07 | 6.311e-07 |
+| float32 | float64 layer | mlp_output | 6.804e-07 | 1.202e-07 | 5.938e-07 |
+| float32 | float64 layer | output | 1.043e-06 | 1.625e-07 | 1.958e-07 |
+| float32 | float64 layer | dL/dx | 2.820e-06 | 2.578e-07 | 3.001e-07 |
+| float32 | HF Qwen3DecoderLayer | output / dL/dx | 0 | 0 | 0 |
+| bfloat16 | float64 layer | output | 2.631e-02 | 2.993e-03 | 3.758e-03 |
+| bfloat16 | float64 layer | dL/dx | 3.741e-02 | 4.180e-03 | 4.915e-03 |
+| bfloat16 | HF Qwen3DecoderLayer | output / dL/dx | 0 | 0 | 0 |
+
 ## 2026-10-16 — M1.4 (part B): grouped-query attention
 
 ### What was done
@@ -56,7 +93,7 @@ observed. Nothing is listed as passed unless it was executed. Newest first.
 - Pending from M0: confirm GitHub Actions is green.
 
 ### Next
-M1.5 — Qwen3 decoder block (awaiting approval).
+M1.5 — Qwen3 decoder block (done, see above).
 
 ## 2026-10-16 — M1.4 (part A): QK-Norm
 

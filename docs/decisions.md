@@ -158,3 +158,11 @@ Rows with no allowed key give zero probabilities (finite gradients) instead of N
 `repeat_kv` copies each KV head `g` times for readability and exact HF parity.
 The KV cache will store only `Nkv` heads, and the C++ port will index head `h // g`
 without copying (docs/components/attention.md §9). **Accepted for M1.**
+
+## D-026 · 2026-10-16 · Decoder layer only wires verified components
+`Qwen3DecoderLayer` composes RMSNorm, `GroupedQueryAttention` and
+`SwiGLUFeedForward` with HF names (`input_layernorm`, `self_attn`,
+`post_attention_layernorm`, `mlp`). It takes precomputed `(cos, sin)` and an
+optional boolean mask instead of computing positions itself, so one RoPE table
+per model forward is shared by all layers (as HF passes `position_embeddings`).
+**Accepted.**

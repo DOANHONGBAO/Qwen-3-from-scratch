@@ -36,7 +36,7 @@ values, determinism, invalid input), "common mistakes" notes.
 - [x] M1.4 QK-Norm + grouped-query attention with causal masking (renumbered 2026-10-16, see D-022)
   - [x] QK-Norm — `layers/qk_norm.py` (reuses RMSNorm), unit + HF parity tests (bit-identical), doc `docs/components/qk_norm.md`
   - [x] GQA attention — `layers/attention.py` (projections, QK-Norm, RoPE, contiguous KV grouping, position-based causal mask, float32 softmax, `o_proj`); every intermediate and all gradients bit-identical to HF eager `Qwen3Attention` for MHA/GQA/MQA; leakage, float64 loop and SDPA references; notebook `04_qk_norm_gqa.ipynb`; doc `docs/components/attention.md`; fixture `tests/fixtures/attention_small.json`
-- [ ] M1.5 Decoder block (pre-norm residuals)
+- [x] M1.5 Decoder block — `layers/decoder.py` (`Qwen3DecoderLayer`: pre-norm attention + SwiGLU residual sublayers, HF parameter names), 29 unit tests (ordering, residual/identity ablations, norm placement, leakage, gradcheck), HF parity (every intermediate and all fp32 gradients bit-identical), notebook `05_decoder_block.ipynb`, doc `docs/components/decoder.md`
 - [ ] M1.6 Qwen3 model (tied embeddings, parameter count == `estimate_num_parameters`)
 - [ ] M1.7 Notebook walkthrough of the tiny model
 
