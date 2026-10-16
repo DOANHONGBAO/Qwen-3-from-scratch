@@ -32,7 +32,7 @@ values, determinism, invalid input), "common mistakes" notes.
 
 - [x] M1.1 RMSNorm — `layers/rmsnorm.py`, 101 unit tests + 13 HF parity tests, gradcheck, notebook `01_rmsnorm.ipynb`, doc `docs/components/rmsnorm.md` (bit-identical to HF `Qwen3RMSNorm` in fp32/bf16/fp16)
 - [x] M1.2 SwiGLU FeedForward — `layers/swiglu.py`, unit + HF parity tests (bit-identical to `Qwen3MLP` fwd/bwd in fp32/bf16), gradcheck, notebook `02_swiglu.ipynb`, doc `docs/components/swiglu.md`, C++ fixture `tests/fixtures/swiglu_small.json`
-- [ ] M1.3 RoPE (tables, `rotate_half`, offset; checks: norm preservation, relative-position property)
+- [x] M1.3 RoPE — `layers/rope.py` (split-half/`rotate_half`, explicit `position_ids`, offsets, optional table cache), unit + HF parity tests (bit-identical tables and rotations in fp32/bf16), relative-position and KV-decoding checks, notebook `03_rope.ipynb`, doc `docs/components/rope.md`, C++ fixture `tests/fixtures/rope_small.json`
 - [ ] M1.4 QK-Norm (per-head RMSNorm before RoPE)
 - [ ] M1.5 Causal mask (with KV offset)
 - [ ] M1.6 Grouped Query Attention (vs. naive MHA with repeated KV; vs. `scaled_dot_product_attention`)

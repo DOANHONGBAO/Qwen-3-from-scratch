@@ -42,7 +42,7 @@ CI and the laptop never need a GPU or weights. **Accepted.**
 ## D-008 · 2026-10-16 · Numerical precision order follows HF for parity
 Where the educational and official code differ only in cast order (RMSNorm, RoPE,
 softmax — discrepancies X5–X7), we follow HF so bf16 parity tests can be tight.
-**Proposed — confirm per component in M1.** RMSNorm: confirmed by D-013.
+**Proposed — confirm per component in M1.** RMSNorm: confirmed by D-013. RoPE: D-019.
 
 ## D-009 · 2026-10-16 · Real weight tying
 When `tie_word_embeddings` is true the LM head will share the embedding
@@ -104,3 +104,20 @@ committed. `tests/test_fixtures.py` checks inputs and parameters bit-exactly and
 outputs within the stored tolerance. Large fixtures for M3 will be generated at
 test time instead. Supersedes the "generate as CTest step" note in
 docs/components/rmsnorm.md for small fixtures. **Accepted.**
+
+## D-019 · 2026-10-16 · RoPE follows HF: split-half pairing, float32 tables, cast before rotating
+`rotate_half` pairing `(x_i, x_{i+D/2})`, `inv_freq` and angles in float32, cos/sin
+cast to the activation dtype before the rotation. This is bit-identical to HF
+`Qwen3RotaryEmbedding` + `apply_rotary_pos_emb` (tested in fp32/bf16, up to
+position 32,767). The interleaved RoFormer layout is implemented only as
+`apply_rope_interleaved` to demonstrate that it needs a weight permutation; it is
+never used by the model. `apply_rope` refuses tables whose dtype differs from the
+activations, so the order cannot be mixed up silently. **Accepted.**
+
+## D-020 · 2026-10-16 · RoPE API takes explicit position ids
+`RotaryEmbedding.forward(position_ids, dtype)` returns `(cos, sin)` for
+arbitrary `[T]` / `[B, T]` positions. Offsets for KV-cache decoding are expressed
+as positions (`make_position_ids(T, offset=cache_len)`), not as a hidden counter in
+the model (unlike R2's `current_pos`). This keeps the module stateless and maps 1:1
+to the C++ port. An optional precomputed table (`max_position_embeddings`) is a
+pure optimisation, bit-identical to direct computation. **Accepted.**

@@ -41,7 +41,7 @@ out    = softmax(scores) v                    -> (B, H, T, d_h) -> (B, T, H·d_h
 |---|---|---|---|---|
 | 1 | RMSNorm | `y = x / sqrt(mean(x², -1) + ε) ⊙ w` (computed in fp32) — [details](components/rmsnorm.md) | `(..., n) → (..., n)` | M1.1 **done** |
 | 2 | SwiGLU FeedForward | `down( silu(gate(x)) ⊙ up(x) )`, no biases — [details](components/swiglu.md) | `(B,T,d) → (B,T,d)` via `d_ff` | M1.2 **done** |
-| 3 | RoPE | rotate pairs `(x_i, x_{i+d_h/2})` by `p·θ^{-2i/d_h}` ("rotate_half" layout) | `(B,H,T,d_h) → same` | M1.3 |
+| 3 | RoPE | rotate pairs `(x_i, x_{i+d_h/2})` by `p·θ^{-2i/d_h}` ("rotate_half" layout) — [details](components/rope.md) | `(B,H,T,d_h) → same` | M1.3 **done** |
 | 4 | QK-Norm | RMSNorm over `d_h` of each Q and K head, **before** RoPE | `(B,T,H,d_h) → same` | M1.4 |
 | 5 | Causal mask | position `i` may attend to keys `j ≤ past + i` | `(T, S)` bool | M1.5 |
 | 6 | Grouped Query Attention | see §1; `H_kv` KV heads shared by `g` query heads | `(B,T,d) → (B,T,d)` | M1.6 |
@@ -75,7 +75,7 @@ can be written module-by-module.
 | `env.py` — environment checks | — (Python tooling only) | **M0: done** |
 | `layers/rmsnorm.py` — `RMSNorm`, `rms_norm`, `rms_norm_textbook` | `include/qwen3/rmsnorm.hpp` (requirements: [rmsnorm.md §9](components/rmsnorm.md#9-requirements-for-the-c20-port-m3)) | **M1.1: done** / M3 |
 | `layers/swiglu.py` — `SwiGLUFeedForward`, `swiglu_textbook`, `silu_textbook` | `include/qwen3/swiglu.hpp` (requirements: [swiglu.md §10](components/swiglu.md#10-requirements-for-the-c20-port-m3)) | **M1.2: done** / M3 |
-| `layers/rope.py` | `include/qwen3/rope.hpp` | M1.3 / M3 |
+| `layers/rope.py` — `RotaryEmbedding`, `apply_rope`, `apply_rope_to_qk`, `rope_cos_sin`, `compute_inv_freq`, `make_position_ids` | `include/qwen3/rope.hpp` (requirements: [rope.md §12](components/rope.md#12-requirements-for-the-c20-port-m3)) | **M1.3: done** / M3 |
 | `layers/attention.py` (QK-Norm, mask, GQA) | `include/qwen3/attention.hpp` | M1.4–1.6 / M3 |
 | `layers/block.py` | `include/qwen3/block.hpp` | M1.7 / M3 |
 | `model.py` | `include/qwen3/model.hpp` | M1.8 / M3 |
@@ -87,7 +87,8 @@ can be written module-by-module.
 Boundaries:
 
 - Components receive explicit dimensions or a `Qwen3Config`; none reads global state.
-- Pure functions where possible (`apply_rope(x, cos, sin, offset)`,
+- Pure functions where possible (`apply_rope(x, cos, sin)` with tables built from
+  explicit `position_ids`,
   `build_causal_mask(T, past)`), so the C++ port can mirror signatures.
 - Parameter names follow the HF checkpoint where practical (`q_proj`, `k_proj`,
   `v_proj`, `o_proj`, `q_norm`, `k_norm`, `gate_proj`, `up_proj`, `down_proj`,

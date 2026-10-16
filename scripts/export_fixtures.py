@@ -22,7 +22,12 @@ from typing import Any
 
 import torch
 
-from qwen3_scratch.layers import SwiGLUFeedForward
+from qwen3_scratch.layers import (
+    RotaryEmbedding,
+    SwiGLUFeedForward,
+    apply_rope_to_qk,
+    make_position_ids,
+)
 
 FIXTURE_DIR = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
 
@@ -57,7 +62,35 @@ def swiglu_fixture() -> dict[str, Any]:
     }
 
 
+def rope_fixture() -> dict[str, Any]:
+    """RoPE, head_dim=8, theta=10000, Nq=2, Nkv=1, positions 5..7 (decode-like offset)."""
+    seed, d, theta = 4321, 8, 10_000.0
+    gen = torch.Generator().manual_seed(seed)
+    q = torch.randn(1, 2, 3, d, generator=gen)
+    k = torch.randn(1, 1, 3, d, generator=gen)
+    rope = RotaryEmbedding(d, theta)
+    pos = make_position_ids(3, offset=5)
+    cos, sin = rope(pos)
+    q_rot, k_rot = apply_rope_to_qk(q, k, cos, sin)
+    return {
+        "component": "rope",
+        "description": "split-half RoPE: y = x*cos + rotate_half(x)*sin, float32 tables",
+        "seed": seed,
+        "config": {"head_dim": d, "rope_theta": theta, "position_ids": pos.tolist()},
+        "tolerance": {"rtol": 1e-6, "atol": 1e-6},
+        "inputs": {"q": _tensor(q), "k": _tensor(k)},
+        "parameters": {"inv_freq": _tensor(rope.inv_freq)},
+        "outputs": {
+            "cos": _tensor(cos),
+            "sin": _tensor(sin),
+            "q_rot": _tensor(q_rot),
+            "k_rot": _tensor(k_rot),
+        },
+    }
+
+
 FIXTURES: dict[str, Callable[[], dict[str, Any]]] = {
+    "rope_small.json": rope_fixture,
     "swiglu_small.json": swiglu_fixture,
 }
 

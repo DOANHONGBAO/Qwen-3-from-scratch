@@ -3,6 +3,69 @@
 Results are reported as **PASSED / FAILED / SKIPPED / NOT RUN**, exactly as
 observed. Nothing is listed as passed unless it was executed. Newest first.
 
+## 2026-10-16 — M1.3: Rotary position embedding
+
+### What was done
+- `src/qwen3_scratch/layers/rope.py`: `compute_inv_freq`, `make_position_ids`,
+  `rope_cos_sin`, `rotate_half`, `apply_rope`, `apply_rope_to_qk`,
+  `RotaryEmbedding` (optional table cache), plus educational `rotate_2d`,
+  `apply_rope_interleaved`, `half_layout_permutation`.
+- Tests: `tests/test_rope.py` (71), `tests/parity/test_rope_hf.py` (12),
+  `tests/fixtures/rope_small.json` added to the fixture checks.
+- `notebooks/03_rope.ipynb`, `docs/components/rope.md`, `scripts/rope_report.py`.
+  Decisions D-019, D-020; discrepancies X6/X12 updated with measurements.
+- Verified in the HF source: `inv_freq = 1/θ^(arange(0, D, 2)/D)` (float32),
+  `freqs = position_ids.float() * inv_freq`, `emb = cat(freqs, freqs)`, cos/sin cast
+  to `x.dtype`, `q*cos + rotate_half(q)*sin` with `unsqueeze_dim=1`; default
+  `position_ids = arange(past_seen, past_seen + T)`.
+
+### Validation (assistant sandbox: Python 3.11.17, torch 2.14.1 on CPU, transformers 5.20.0)
+
+| Check | Result |
+|---|---|
+| `python scripts/check_env.py` | PASSED |
+| `python -m ruff check .` / `python -m ruff format --check .` | PASSED / PASSED (43 files) |
+| `python -m pytest` (with transformers + matplotlib) | PASSED: 322 passed, 2 skipped |
+| `python -m pytest` (transformers and matplotlib simulated missing) | PASSED: 288 passed, 5 skipped |
+| `tests/test_rope.py` | PASSED: 71 passed |
+| `tests/parity/test_rope_hf.py` | PASSED: 12 passed; `inv_freq`, cos/sin, rotated q/k and gradients **bit-identical** to HF (fp32, bf16; prefill, decode offset 1234, per-sequence offsets, positions 32760–32762) |
+| Relative-position property (float64) | PASSED, `1e-10` |
+| Incremental vs full rotation; simulated cached decoding scores | PASSED (bit-identical rotation; scores within float64 tolerance) |
+| `gradcheck` (x, cos, sin; float64); gradient = inverse rotation | PASSED |
+| `notebooks/03_rope.ipynb` executed with `nbclient` (3 plots rendered and inspected) | PASSED |
+| `tests/test_fixtures.py` (swiglu + rope fixtures) | PASSED: 8 passed |
+| Same on Fedora | NOT RUN by the assistant |
+
+`python scripts/rope_report.py` (head_dim 128, θ = 1e6):
+
+| quantity | float32 vs float64, max_abs (all 32,768 positions) | positions ≤ 4095 |
+|---|---|---|
+| inv_freq | 4.3e-08 | 4.3e-08 |
+| angle (rad) | 2.4e-03 | 2.9e-04 |
+| cos / sin | 2.3e-03 / 2.3e-03 | 2.6e-04 / 2.8e-04 |
+
+| offset | dtype | ours vs | max_abs | rel_l2 | elements differing |
+|---|---|---|---|---|---|
+| 0 | float32 | float64 truth | 1.229e-04 | 2.537e-06 | 99.8% |
+| 0 | float32 / bfloat16 | HF apply_rotary_pos_emb | 0 | 0 | 0.0% |
+| 0 | bfloat16 | rotate-in-fp32 order (R2) | 3.125e-02 | 2.508e-03 | 24.5% |
+| 8192 | float32 | float64 truth | 2.306e-03 | 7.220e-05 | 100.0% |
+| 8192 | float32 / bfloat16 | HF | 0 | 0 | 0.0% |
+| 32256 | float32 | float64 truth | 8.642e-03 | 2.789e-04 | 100.0% |
+| 32256 | bfloat16 | float64 truth | 3.088e-02 | 2.729e-03 | 100.0% |
+| 32256 | float32 / bfloat16 | HF | 0 | 0 | 0.0% |
+| 32256 | bfloat16 | rotate-in-fp32 order (R2) | 3.125e-02 | 3.118e-03 | 38.0% |
+
+Relative-position identity with float32 tables, max over 200 random `(q, k)`:
+shift 1 → 2.9e-6, 100 → 4.5e-5, 1000 → 3.5e-4, 8000 → 1.4e-3, 32000 → 6.4e-3.
+
+### Open items
+- Run on Fedora and push (commits created locally by the assistant).
+- Pending from M0: confirm GitHub Actions is green.
+
+### Next
+M1.4 — QK-Norm and grouped-query attention (awaiting approval).
+
 ## 2026-10-16 — M1.2: SwiGLU feed-forward
 
 ### What was done
