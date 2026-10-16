@@ -75,3 +75,23 @@ keeps compatible ranges so the package also installs elsewhere (CI, Kaggle).
 - Qwen3-0.6B in bf16 needs ~1.2 GB for weights (~2.4 GB in fp32) plus
   activations; CPU inference is feasible but slow.
 - GPU availability is checked, never assumed (`check_env.py` reports it as INFO).
+
+## Troubleshooting
+
+**`No module named 'qwen3_scratch'` / `No module named 'torch'` / `ruff: command not found`,
+and tracebacks show `/usr/lib64/python3.x`.** The shell is using Fedora's system
+Python, not the conda env. Typical causes: the active env is not `qwen3-scratch`
+(check the prompt — hyphen, not underscore), or the env was created without
+Python (`conda create -n NAME` with no packages), so `python` falls through to
+`/usr/bin/python3`. Fix:
+
+```bash
+conda deactivate
+conda env create -f environment.yml      # creates qwen3-scratch with Python 3.11
+conda activate qwen3-scratch
+which python                             # must be .../envs/qwen3-scratch/bin/python
+python scripts/check_env.py
+```
+
+`check_env.py` prints the interpreter path, Python version and active env first,
+and warns about each of these mistakes before importing anything.
