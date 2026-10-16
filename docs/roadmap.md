@@ -43,7 +43,7 @@ values, determinism, invalid input), "common mistakes" notes.
 **Acceptance:** all modules tested on CPU; full tiny-model forward is
 deterministic; parameter count matches the analytic count; CI green.
 
-## M2 — Official checkpoint, tokenizer, KV cache **(M2.1 done; M2.2 in progress)**
+## M2 — Official checkpoint, tokenizer, KV cache **(done, pending review)**
 
 ### M2.1 — Official Qwen3 pretrained weights
 - [x] Hardware audit on the real machine; memory model; local vs Kaggle decision (`docs/hardware_assessment.md`)
@@ -56,11 +56,19 @@ deterministic; parameter count matches the analytic count; CI green.
 - [x] Notebook 07, `scripts/run_pretrained_qwen3.py`, `scripts/verify_pretrained.py`
 
 ### M2.2 — KV cache and generation
-- [ ] Caller-owned per-layer KV cache, cached vs uncached equality, sampling, benchmark (next commit)
+- [x] Caller-owned per-layer KV cache (post-RoPE keys, native KV heads), absolute-position masks
+- [x] Full forward == prefill + token-by-token / chunked cached decoding (Tiny: float64 ≤ 1e-12)
+- [x] Cached decoding equal to HF `DynamicCache`; greedy ids equal to `transformers.generate`
+- [x] Greedy, temperature, top-k, top-p, seeded sampling, EOS, context limits
+- [x] Cached vs uncached on the real model (logits ≤ 4.2e-5 in fp32, identical tokens)
+- [x] Benchmark (prefill, decode tok/s, peak RSS, KV size) on the target laptop; notebook 08
+- [x] C++ fixtures: checkpoint name map, KV cache prefill/decode, sampling filters
+- [~] Kaggle fallback kernel `kaggle/qwen3_inference/` (prepared; not submitted because the local run sufficed)
+- [ ] Optional: padded batches with a cache, pre-allocated cache (deferred)
 
-**Acceptance (M2.1 part met 2026-10-16):** logits within tolerance (observed: exactly
-equal) and identical greedy token IDs for a fixed prompt set, executed on the real
-checkpoint and recorded in `docs/progress.md`.
+**Acceptance (met 2026-10-16):** logits within tolerance (observed: exactly equal) and
+identical greedy token IDs for a fixed prompt set, executed on the real checkpoint
+and recorded in `docs/progress.md`.
 
 ## M3 — C++20 CPU implementation
 

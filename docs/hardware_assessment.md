@@ -49,6 +49,7 @@ Observed on this machine with the real weights (`results/m2/parity_*.json`,
 | HF `transformers`, parity reference phase | fp32 | 3.52 GiB | 2.72 GiB (2.62 anonymous) |
 | ours, parity phase | bf16 | 2.53 GiB | 1.57 GiB |
 | HF, parity reference phase | bf16 | 1.59 GiB | 1.59 GiB (1.21 file-backed) |
+| ours, benchmark (P ≤ 256, N ≤ 64, KV cache ≤ 70 MiB) | fp32 | 2.56–2.81 GiB | 2.53 GiB |
 
 Peak RSS includes the memory-mapped checkpoint pages read during loading; the
 anonymous (non-reclaimable) memory of one fp32 model stays ≈ 2.4–2.6 GiB.
@@ -79,6 +80,21 @@ file is in the page cache). Download: 165 s for 1.19 GB.
   kernel (`kaggle/qwen3_inference/`) is prepared and documented but was **not**
   submitted (no kernel URL, no remote results).
 
+## 3b. Throughput on this machine (fp32, 2 threads, batch 1)
+
+From `results/m2/benchmark_local_fp32.{json,csv,png}` (median of 2 runs, warm-up excluded):
+
+| prompt P | prefill | cached decode | uncached decode | decode speed-up |
+|---|---|---|---|---|
+| 16 | 0.94–1.03 s | 4.3–4.6 tok/s (216–221 ms/token) | 0.70–0.96 tok/s | 4.8–6.4× |
+| 64 | 1.65–1.72 s | 4.2–4.4 tok/s (226–232 ms) | 0.47–0.56 tok/s | 7.8–9.2× |
+| 128 | 2.62–2.69 s | 4.1 tok/s (239–245 ms) | 0.32–0.37 tok/s | 11.3–12.8× |
+| 256 | 4.85–4.88 s | 3.6–3.7 tok/s (271–278 ms) | SKIPPED (time budget) | — |
+
+(ranges over N = 16, 32, 64 new tokens; speed-up = uncached decode time / cached decode time.)
+Note: `MemAvailable` at the end of the benchmark was 0.67 GiB with the desktop running,
+so some timings may include memory pressure from other programs.
+
 ## 4. Rehearsal (sandbox, not this machine)
 
 Before touching the real checkpoint, the full pipeline was rehearsed in the
@@ -86,5 +102,5 @@ development sandbox (Intel Xeon, 2 vCPU, AVX-512, 7.8 GiB RAM, no swap) with a
 **random-weight checkpoint of the exact 0.6B shapes** (`scripts/make_synthetic_checkpoint.py`):
 our model was bit-identical to HF in fp32 (every hidden state and the logits), greedy
 ids matched, peak RSS per phase ≈ 4.0 GiB including ≈ 1.1 GiB of mapped file pages,
-These numbers only validated the scripts; all results
+cached decode ≈ 6 tok/s. These numbers only validated the scripts; all results
 reported for M2 come from the maintainer's machine.

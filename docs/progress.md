@@ -3,6 +3,43 @@
 Results are reported as **PASSED / FAILED / SKIPPED / NOT RUN**, exactly as
 observed. Nothing is listed as passed unless it was executed. Newest first.
 
+## 2026-10-16 — M2.2: KV cache and efficient generation
+
+### What was done
+- `src/qwen3_scratch/kv_cache.py`: `KVCache` (per-layer `[B, Nkv, T, D]` post-RoPE keys
+  and values, `update`/`commit`/`rollback`/`reset`, capacity, batch, head, dtype and
+  device validation) and `kv_cache_bytes`.
+- Attention / decoder / model: `kv_cache`, `past_key_values`, `use_cache`; positions
+  continue from the cache length; masks from absolute indices (`T_q != T_k`); padding
+  masks with a cache rejected; `logits_to_keep`; `model.new_cache()`.
+- `src/qwen3_scratch/generation.py`: `generate()` with prefill + cached decode,
+  greedy / temperature / top-k / top-p, seeded sampling, EOS, streaming callback,
+  per-step logits; `greedy_generate` kept (uncached by default).
+- `scripts/benchmark_generation.py` (+ plots), `scripts/m2_local_run.sh`,
+  `notebooks/08_kv_cache_generation.ipynb`, `docs/components/kv_cache.md`,
+  fixtures `kv_cache_tiny.json`, `sampling_small.json`, Kaggle fallback package
+  `kaggle/qwen3_inference/` (not submitted), decisions D-038–D-040, X13.
+- Tests: `tests/test_kv_cache.py` (37, incl. the mandatory full-vs-cached test),
+  `tests/test_sampling.py` (34), cache/generate parity with HF in
+  `tests/parity/test_pretrained_hf.py`.
+
+### Validation
+| Check | Where | Result |
+|---|---|---|
+| Full forward vs prefill + token-by-token, float64, 2 tiny configs | sandbox | PASSED (≤ 1e-12) |
+| Chunked decoding (4 chunkings), future leakage inside a chunk | sandbox | PASSED |
+| Our cache vs HF `DynamicCache` (step logits, layer-0 keys), tiny | sandbox | PASSED (≤ 1e-5, fp32) |
+| Greedy ids vs `transformers.generate`, tiny, cached and uncached | sandbox | PASSED (identical) |
+| Real Qwen3-0.6B-Base, cached vs uncached, parity script (5 prompts × 8 steps) | maintainer's laptop | PASSED — fp32 max \|Δlogit\| 2.4–3.0e-5, ids identical; bf16 Δ = 0 |
+| Real model, benchmark (9 cases with both modes) | maintainer's laptop | PASSED — max \|Δlogit\| 1.8–4.2e-5, tokens identical in all 9 |
+| Benchmark | maintainer's laptop, fp32, 2 threads | RUN — cached decode 4.1–4.6 tok/s (P ≤ 128), 3.6 tok/s (P = 256); uncached 0.32–0.96 tok/s; decode speed-up 4.8–12.8×; peak RSS 2.56–2.81 GiB; KV cache 6.8–69.8 MiB (= 224 KiB/token analytic). Uncached P = 256: SKIPPED (time budget) |
+| Kaggle kernel | — | NOT RUN (not needed) |
+| Weights-tier `slow` test (fp32 cached vs uncached in pytest) | — | NOT RUN on real weights (covered by the parity script); PASSED on a random 0.6B-shape checkpoint in the sandbox |
+
+### Open items
+Padded batches with the KV cache; pre-allocated/paged cache; bf16 speed on CPUs with
+native bf16 (this laptop has none).
+
 ## 2026-10-16 — M2.1: official Qwen3-0.6B-Base weights, tokenizer, HF parity
 
 ### What was done
@@ -29,8 +66,7 @@ observed. Nothing is listed as passed unless it was executed. Newest first.
 - **Maintainer's Fedora 44 laptop** (Ryzen 3 3250U, 5.66 GiB RAM, CPU only; Python
   3.11.17, torch 2.14.1+cpu, transformers 5.20.0, safetensors 0.8.0, tokenizers 0.23.3,
   huggingface_hub 2.2.0): everything that needs the real checkpoint. Raw results in
-  `results/m2/`. The runs used the final M2 scripts (next commit), whose parity report
-  additionally contains the KV-cache checks described under M2.2.
+  `results/m2/`.
 - **Assistant sandbox** (Xeon 2 vCPU, 7.8 GiB, Python 3.13, torch 2.14.1+cu130 on CPU,
   transformers 5.20.1): unit/parity tests and a rehearsal with a random-weight checkpoint
   of the exact 0.6B shapes. huggingface.co is not reachable from the sandbox.
@@ -49,9 +85,10 @@ observed. Nothing is listed as passed unless it was executed. Newest first.
 | Real text completion with our model (`run_pretrained_qwen3.py`) | RUN — e.g. "Hà Nội là thủ đô của Việt Nam, là một trong những thành phố…" |
 | Peak RSS fp32: ours 3.60 GiB, HF 3.52 GiB (separate processes) | measured |
 | Free-RAM guard | refused fp32 3× at 2.98–3.07 GiB available; fp32 run started with `--force` at 3.55 GiB (estimate 2.97 GiB) |
-| CPU test suite at this commit (sandbox, with transformers) | PASSED — 649 passed, 13 skipped |
-| Ruff lint / format; fixtures `--check` | PASSED |
-| Notebook 07 executed (synthetic mode) | PASSED |
+| CPU test suite with transformers (sandbox) | PASSED — 731 passed, 13 skipped |
+| CPU test suite without transformers/safetensors/tokenizers/matplotlib (simulated) | PASSED — 604 passed, 24 skipped |
+| Ruff lint / format; fixtures `--check`; `check_env.py`; C++ build + CTest | PASSED |
+| Notebooks 07 and 08 executed (synthetic / tiny mode) | PASSED |
 
 ## 2026-10-16 — M1.6: Tiny Qwen3 causal language model (full forward pass)
 

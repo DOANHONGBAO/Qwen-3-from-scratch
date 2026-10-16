@@ -11,8 +11,13 @@ Parameter names follow the HF checkpoint (``model.embed_tokens``,
 ``model.layers.{i}.*``, ``model.norm``, ``lm_head``), so
 ``Qwen3ForCausalLM.load_state_dict(hf_model.state_dict())`` maps 1:1.
 
-Not implemented on purpose (later milestones): KV cache, pretrained checkpoint
-loading (M2), tokenizer (M2), dropout/training loop, sliding-window attention.
+KV cache (M2.2): ``forward(..., past_key_values=cache, use_cache=True)`` processes
+only the NEW tokens, appends their keys/values to ``cache`` (in place) and returns
+it. Positions continue from ``cache.seq_len``. Padding masks are not supported
+together with a cache (raises ``NotImplementedError``).
+
+Not implemented on purpose: dropout/training loop, sliding-window attention,
+padded batches with a KV cache.
 """
 
 from __future__ import annotations
@@ -23,6 +28,7 @@ import torch
 from torch import nn
 
 from qwen3_scratch.config import Qwen3Config
+from qwen3_scratch.kv_cache import KVCache
 from qwen3_scratch.layers.attention import causal_mask
 from qwen3_scratch.layers.decoder import Qwen3DecoderLayer
 from qwen3_scratch.layers.rmsnorm import RMSNorm
@@ -40,14 +46,16 @@ class Qwen3ModelOutput:
     # (embeddings, output of layer 0, ..., output of layer N-1), each [B, T, H],
     # all BEFORE the final norm; only when output_hidden_states=True.
     hidden_states: tuple[torch.Tensor, ...] | None = None
+    past_key_values: KVCache | None = None  # the (mutated) cache when use_cache=True
 
 
 @dataclass
 class CausalLMOutput:
-    logits: torch.Tensor  # [B, T, V]
+    logits: torch.Tensor  # [B, T, V] (or [B, logits_to_keep, V])
     loss: torch.Tensor | None = None  # scalar, only when labels are given
     last_hidden_state: torch.Tensor | None = None  # [B, T, H]
     hidden_states: tuple[torch.Tensor, ...] | None = None
+    past_key_values: KVCache | None = None
 
 
 def _padding_to_allowed(attention_mask: torch.Tensor, batch: int, seq_len: int) -> torch.Tensor:
@@ -118,14 +126,17 @@ class Qwen3Model(nn.Module):
             raise ValueError(f"token ids must be in [0, {self.config.vocab_size})")
         return self.embed_tokens(input_ids)
 
-    def _positions(self, position_ids, batch: int, seq_len: int, device) -> torch.Tensor:
+    def _positions(
+        self, position_ids, batch: int, seq_len: int, device, offset: int = 0
+    ) -> torch.Tensor:
         max_pos = self.config.max_position_embeddings
         if position_ids is None:
-            if seq_len > max_pos:
+            if offset + seq_len > max_pos:
                 raise ValueError(
-                    f"sequence length {seq_len} exceeds max_position_embeddings={max_pos}"
+                    f"{offset} cached + {seq_len} new tokens exceed "
+                    f"max_position_embeddings={max_pos}"
                 )
-            return torch.arange(seq_len, device=device)[None]  # [1, T]
+            return torch.arange(offset, offset + seq_len, device=device)[None]  # [1, T]
         if position_ids.dtype.is_floating_point or position_ids.dtype == torch.bool:
             raise TypeError("position_ids must be an integer tensor")
         if position_ids.dim() == 1:
@@ -147,6 +158,8 @@ class Qwen3Model(nn.Module):
         position_ids: torch.Tensor | None = None,
         inputs_embeds: torch.Tensor | None = None,
         output_hidden_states: bool = False,
+        past_key_values: KVCache | None = None,
+        use_cache: bool = False,
     ) -> Qwen3ModelOutput:
         """Args:
         input_ids: ``[B, T]`` token ids in ``[0, vocab_size)``.
@@ -157,24 +170,75 @@ class Qwen3Model(nn.Module):
             them explicitly for left-padded batches (e.g. ``cumsum(mask) - 1``).
         inputs_embeds: alternative to ``input_ids``, ``[B, T, H]``.
         output_hidden_states: also return embeddings and every layer output.
+        past_key_values: a :class:`KVCache` to read from and append to (requires
+            ``use_cache=True``). ``input_ids`` then holds only the NEW tokens.
+        use_cache: if True, append the new keys/values to ``past_key_values``
+            (a fresh cache is created when it is None) and return it.
         """
+        if past_key_values is not None and not use_cache:
+            raise ValueError("past_key_values was given but use_cache=False")
+        if past_key_values is not None and not isinstance(past_key_values, KVCache):
+            raise TypeError(f"past_key_values must be a KVCache, got {type(past_key_values)}")
         hidden = self._embed(input_ids, inputs_embeds)  # [B, T, H]
         batch, seq_len, _ = hidden.shape
         if seq_len == 0:
             raise ValueError("sequence length must be at least 1")
-        positions = self._positions(position_ids, batch, seq_len, hidden.device)
+
+        cache = None
+        past = 0
+        if use_cache:
+            cache = (
+                past_key_values if past_key_values is not None else KVCache.from_config(self.config)
+            )
+            if cache.num_layers != len(self.layers):
+                raise ValueError(
+                    f"cache has {cache.num_layers} layers, model has {len(self.layers)}"
+                )
+            if cache.batch_size is not None and cache.batch_size != batch:
+                raise ValueError(
+                    f"cache holds batch {cache.batch_size}, input has batch {batch} "
+                    "(use a separate cache per session, or reset() it)"
+                )
+            past = cache.seq_len
+            cache.check_can_append(seq_len)
+            if attention_mask is not None:
+                if attention_mask.shape[0] != batch or attention_mask.shape[-1] not in (
+                    seq_len,
+                    past + seq_len,
+                ):
+                    raise ValueError(
+                        f"attention_mask must be [B, T] or [B, T_past + T], "
+                        f"got {tuple(attention_mask.shape)}"
+                    )
+                if not bool(attention_mask.bool().all()):
+                    raise NotImplementedError(
+                        "padding masks are not supported together with the KV cache; "
+                        "use equal-length prompts (or use_cache=False)"
+                    )
+                attention_mask = None  # all ones: identical to no mask
+
+        positions = self._positions(position_ids, batch, seq_len, hidden.device, offset=past)
         cos, sin = self.rotary_emb(positions, dtype=hidden.dtype)  # [1|B, T, D], shared
-        allowed = None  # None -> plain causal mask inside attention
+        allowed = None  # None -> causal mask (by absolute index) inside attention
         if attention_mask is not None:
             allowed = _padding_to_allowed(attention_mask, batch, seq_len)
 
         all_hidden = [hidden] if output_hidden_states else None
-        for layer in self.layers:
-            hidden = layer(hidden, cos, sin, allowed)
-            if all_hidden is not None:
-                all_hidden.append(hidden)
+        try:
+            for layer in self.layers:
+                hidden = layer(hidden, cos, sin, allowed, kv_cache=cache)
+                if all_hidden is not None:
+                    all_hidden.append(hidden)
+        except BaseException:
+            if cache is not None:
+                cache.rollback()  # never leave half-updated layers behind
+            raise
+        if cache is not None:
+            cache.commit(seq_len)
         hidden = self.norm(hidden)
-        return Qwen3ModelOutput(hidden, tuple(all_hidden) if all_hidden is not None else None)
+        return Qwen3ModelOutput(
+            hidden, tuple(all_hidden) if all_hidden is not None else None, cache
+        )
 
 
 class Qwen3ForCausalLM(nn.Module):
@@ -245,18 +309,44 @@ class Qwen3ForCausalLM(nn.Module):
         inputs_embeds: torch.Tensor | None = None,
         output_hidden_states: bool = False,
         ignore_index: int = IGNORE_INDEX,
+        past_key_values: KVCache | None = None,
+        use_cache: bool = False,
+        logits_to_keep: int = 0,
     ) -> CausalLMOutput:
         """Logits ``[B, T, V]`` and, if ``labels`` ``[B, T]`` are given, the mean
-        next-token loss (labels are shifted inside; see :mod:`qwen3_scratch.loss`)."""
+        next-token loss (labels are shifted inside; see :mod:`qwen3_scratch.loss`).
+
+        ``past_key_values`` / ``use_cache``: see :meth:`Qwen3Model.forward`.
+        ``logits_to_keep``: 0 = logits for every position; ``n > 0`` = only the last
+        ``n`` positions (generation needs just the last one: the LM head is the
+        largest matmul for long prompts, ``T * H * V``).
+        """
+        if isinstance(logits_to_keep, bool) or not isinstance(logits_to_keep, int):
+            raise TypeError("logits_to_keep must be an int")
+        if logits_to_keep < 0:
+            raise ValueError("logits_to_keep must be >= 0")
+        if logits_to_keep and labels is not None:
+            raise ValueError("labels need logits for every position (logits_to_keep=0)")
         out = self.model(
             input_ids,
             attention_mask=attention_mask,
             position_ids=position_ids,
             inputs_embeds=inputs_embeds,
             output_hidden_states=output_hidden_states,
+            past_key_values=past_key_values,
+            use_cache=use_cache,
         )
-        logits = self.lm_head(out.last_hidden_state)  # [B, T, V]
+        hidden = out.last_hidden_state
+        if logits_to_keep:
+            hidden = hidden[:, -logits_to_keep:, :]
+        logits = self.lm_head(hidden)  # [B, T, V]
         loss = None
         if labels is not None:
             loss = causal_lm_loss(logits, labels, ignore_index=ignore_index)
-        return CausalLMOutput(logits, loss, out.last_hidden_state, out.hidden_states)
+        return CausalLMOutput(
+            logits, loss, out.last_hidden_state, out.hidden_states, out.past_key_values
+        )
+
+    def new_cache(self) -> KVCache:
+        """Empty cache sized for this model (one inference session)."""
+        return KVCache.from_config(self.config)

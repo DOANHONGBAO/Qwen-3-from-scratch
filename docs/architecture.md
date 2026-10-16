@@ -1,9 +1,10 @@
 # Architecture
 
-This document describes the Qwen3 dense architecture as implemented (or planned)
-in this repository, the module boundaries shared by Python and C++, and the
-testing conventions. **During M0 nothing below is implemented except
-`Qwen3Config`**; each section lists the milestone that delivers it.
+This document describes the Qwen3 dense architecture as implemented in this
+repository, the module boundaries shared by Python and C++, and the testing
+conventions. The PyTorch implementation is complete through M2 (official weights,
+tokenizer, KV cache, generation); the C++ port is M3. Each section lists the
+milestone that delivers it.
 
 Notation: `B` batch, `T` new tokens in this forward pass, `S` total key length
 (`S = past + T` with a KV cache), `d` = `hidden_size`, `H` = `num_attention_heads`,
@@ -36,7 +37,7 @@ out    = softmax_fp32(scores) v               -> (B, H, T, d_h) -> (B, T, H·d_h
 (query head h reads kv head h // g; QK-Norm before RoPE; v is neither normed nor rotated)
 ```
 
-## 2. Components (planned)
+## 2. Components
 
 | # | Component | Math (summary) | In → out shape | Milestone |
 |---|---|---|---|---|
@@ -48,9 +49,10 @@ out    = softmax_fp32(scores) v               -> (B, H, T, d_h) -> (B, T, H·d_h
 | 6 | Grouped Query Attention | see §1; query head `h` reads KV head `h // g` — [details](components/attention.md) | `(B,T,d) → (B,T,d)` | M1.4 **done** |
 | 7 | Decoder block | two pre-norm residual sublayers — [details](components/decoder.md) | `(B,T,d) → (B,T,d)` | M1.5 **done** |
 | 8 | Qwen3 model | embedding → N blocks → norm → tied LM head (+ causal LM loss, greedy generation) — [details](components/model.md) | `(B,T) → (B,T,V)` | M1.6 **done** |
-| 9 | Tokenizer | byte-level BPE from official `tokenizer.json` + special tokens | `str ↔ list[int]` | M2 |
-| 10 | KV cache | per-layer `(k, v)` of shape `(B,H_kv,S,d_h)`; RoPE offset = past length | — | M2 |
-| 11 | Text generation | greedy (then sampling) decoding loop, EOS stop | `(B,T) → (B,T+n)` | M2 |
+| 9 | Weight loading | explicit checkpoint name map, strict shape/dtype checks, tied head — [details](components/pretrained.md) | safetensors → model | M2.1 **done** |
+| 10 | Tokenizer | adapter over the official `tokenizer.json` (+ config-only added tokens), no BOS — [details](components/pretrained.md#4-tokenizer-adapter) | `str ↔ list[int]` | M2.1 **done** |
+| 11 | KV cache | per-layer post-RoPE `(k, v)` `(B,H_kv,S,d_h)`; positions continue from the cache length — [details](components/kv_cache.md) | — | M2.2 **done** |
+| 12 | Text generation | prefill + cached decode; greedy, temperature, top-k, top-p; EOS stop — [details](components/kv_cache.md#6-generation-api) | `(B,T) → (B,T+n)` | M2.2 **done** |
 
 Qwen3-specific details to get right:
 
@@ -80,11 +82,12 @@ can be written module-by-module.
 | `layers/qk_norm.py` — `QKNorm`, `apply_qk_norm` | part of `include/qwen3/attention.hpp` | **M1.4: done** / M3 |
 | `layers/attention.py` — `GroupedQueryAttention`, `repeat_kv`, `query_to_kv_head`, `causal_mask`, `attention_softmax` | `include/qwen3/attention.hpp` (requirements: [attention.md §9](components/attention.md#9-requirements-for-the-c20-port-m3)) | **M1.4: done** / M3 |
 | `layers/decoder.py` — `Qwen3DecoderLayer`, `DecoderTrace` | `include/qwen3/decoder.hpp` | **M1.5: done** / M3 |
-| `model.py` — `Qwen3Model`, `Qwen3ForCausalLM`; `loss.py` — `causal_lm_loss`; `generation.py` — `greedy_generate` | `include/qwen3/model.hpp` (contract: [model.md §8](components/model.md#8-c20-port-contract-m3)) | **M1.6: done** / M3 |
-| `weights.py` (HF → native name mapping) | `include/qwen3/weights.hpp` | M2 / M3 |
-| `tokenizer.py` | (reuse Python or a C++ BPE later) | M2 / M3+ |
-| `kv_cache.py` | `include/qwen3/kv_cache.hpp` | M2 / M3 |
-| `generate.py` | `include/qwen3/generate.hpp` | M2 / M3 |
+| `model.py` — `Qwen3Model`, `Qwen3ForCausalLM` (`use_cache`, `past_key_values`, `logits_to_keep`); `loss.py` — `causal_lm_loss` | `include/qwen3/model.hpp` (contract: [model.md §8](components/model.md#8-c20-port-contract-m3)) | **M1.6 / M2.2: done** / M3 |
+| `weight_loader.py` — `build_name_map`, `expected_shapes`, `SafetensorsCheckpoint`, `load_into_model`; `pretrained.py` — `load_pretrained`, `download_checkpoint` | `include/qwen3/weights.hpp` (contract: `tests/fixtures/checkpoint_name_map.json`) | **M2.1: done** / M3 |
+| `tokenizer.py` — `Qwen3Tokenizer` (adapter over `tokenizers`) | reuse the Python tokenizer at first; a C++ BPE later | **M2.1: done** / M3+ |
+| `kv_cache.py` — `KVCache`, `kv_cache_bytes` | `include/qwen3/kv_cache.hpp` (contract: [kv_cache.md §9](components/kv_cache.md#9-c-contract), `kv_cache_tiny.json`) | **M2.2: done** / M3 |
+| `generation.py` — `generate`, `GenerationConfig`, `select_next_token`, `apply_top_k`, `apply_top_p`, `greedy_generate` | `include/qwen3/generate.hpp` (contract: `sampling_small.json`) | **M2.2: done** / M3 |
+| `sysinfo.py`, `synthetic.py` — machine probes, random-weight checkpoints for dry runs | — (Python tooling only) | **M2: done** |
 
 Boundaries:
 

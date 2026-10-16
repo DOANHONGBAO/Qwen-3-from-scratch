@@ -6,6 +6,7 @@ automatically, and nothing here contains or reads credentials.
 | Folder | Purpose | Needs weights | Needs internet |
 |---|---|---|---|
 | `smoke_test/` | Check that CUDA works and that fp32/bf16 matmuls agree with an fp64 CPU reference | No | No |
+| `qwen3_inference/` | M2 fallback: HF parity + generation benchmark of our model on Qwen3-0.6B-Base | Downloads the pinned revision | Yes |
 
 Workflow (details in [`docs/kaggle.md`](../docs/kaggle.md)):
 

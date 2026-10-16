@@ -20,10 +20,12 @@ modeling = pytest.importorskip(
 transformers = pytest.importorskip("transformers")
 
 from qwen3_scratch.config import QWEN3_TINY, TINY_QWEN3, Qwen3Config  # noqa: E402
-from qwen3_scratch.generation import greedy_generate  # noqa: E402
+from qwen3_scratch.generation import generate  # noqa: E402
 from qwen3_scratch.pretrained import load_pretrained  # noqa: E402
 
 EXACT = {"atol": 0.0, "rtol": 0.0}
+# cached vs. full-sequence matmuls may round differently in float32 (see test_kv_cache.py)
+F32 = {"atol": 1e-5, "rtol": 1e-5}
 
 
 def _hf_config(c: Qwen3Config):
@@ -92,6 +94,23 @@ def test_reloaded_hf_and_ours_agree(saved) -> None:
         assert_close(ours(ids).logits, hf(ids).logits, **EXACT)
 
 
+def test_cached_decoding_matches_hf_cache(saved) -> None:
+    c, hf, path = saved
+    ours, _ = load_pretrained(path)
+    ids = _ids(c, t=10)
+    with torch.no_grad():
+        hf_cache = transformers.DynamicCache(config=hf.config)
+        cache = ours.new_cache()
+        for start, end in [(0, 6), (6, 7), (7, 8), (8, 10)]:
+            chunk = ids[:, start:end]
+            h = hf(chunk, past_key_values=hf_cache, use_cache=True).logits
+            o = ours(chunk, past_key_values=cache, use_cache=True).logits
+            assert_close(o, h, **F32)
+            assert cache.seq_len == end
+        k_hf = hf_cache.layers[0].keys
+        assert_close(cache.get(0)[0], k_hf, **F32)  # same post-RoPE keys, native heads
+
+
 def test_greedy_tokens_match_hf_generate(saved) -> None:
     c, hf, path = saved
     ours, _ = load_pretrained(path)
@@ -104,4 +123,6 @@ def test_greedy_tokens_match_hf_generate(saved) -> None:
         pad_token_id=0,
         eos_token_id=None,
     )
-    assert torch.equal(greedy_generate(ours, prompt, 12), ref)
+    for use_cache in (True, False):
+        out = generate(ours, prompt, max_new_tokens=12, use_cache=use_cache)
+        assert torch.equal(out.sequences, ref), use_cache

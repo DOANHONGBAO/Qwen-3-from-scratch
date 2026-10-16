@@ -1,7 +1,9 @@
 # Kaggle (optional remote GPU)
 
-Kaggle is used only in M4, and only for runs with an explicit experimental
-objective. Kaggle authentication does **not** guarantee GPU availability (quota,
+Kaggle is used only for runs with an explicit experimental objective: GPU work in
+M4, and in M2 as a **fallback** when the local CPU machine cannot run the
+pretrained-model experiments safely (`kaggle/qwen3_inference/`). M2 itself ran
+locally (see `docs/hardware_assessment.md`), so no M2 kernel was submitted. Kaggle authentication does **not** guarantee GPU availability (quota,
 phone verification and queueing all apply).
 
 ## 1. Credentials (outside the repository)
@@ -46,7 +48,17 @@ Verify the metadata fields once with `kaggle kernels init -p /tmp/k` and compare
 with `kaggle/smoke_test/kernel-metadata.template.json` (the CLI docs do not list
 them; see docs/references.md §4).
 
-## 4. Test tier separation
+## 4. M2 fallback kernel (`kaggle/qwen3_inference/`)
+
+Private CPU kernel with internet enabled. It clones this repository at the commit
+that `prepare_kernel.sh` writes into the script (your local `HEAD`, which must be
+pushed), installs pinned `transformers`/`safetensors`/`tokenizers`/`huggingface-hub`
+versions, downloads the pinned checkpoint revision, runs `hardware_report.py`,
+`verify_pretrained.py` (fp32) and `benchmark_generation.py`, and leaves only small
+JSON/CSV/PNG files in its output. Inference runs on this repository's model; HF is the
+reference only. Details: [`kaggle/qwen3_inference/README.md`](../kaggle/qwen3_inference/README.md).
+
+## 5. Test tier separation
 
 | Tier | Where | How it is selected |
 |---|---|---|

@@ -41,6 +41,16 @@ M3 C++20 CPU port → M4 GPU experiments/benchmarks. Status: `docs/roadmap.md`.
 - Report results honestly as PASSED / FAILED / SKIPPED / NOT RUN. Never claim
   parity with Hugging Face without an executed comparison.
 
+## Pretrained weights and experiments (M2+)
+- Checkpoint: `Qwen/Qwen3-0.6B-Base` pinned at `QWEN3_0_6B_BASE_REVISION`; only
+  `qwen3_scratch.pretrained.download_checkpoint()` touches the network.
+- Inference always runs on `qwen3_scratch.model.Qwen3ForCausalLM`; `transformers` is a
+  reference only (separate process in `scripts/verify_pretrained.py`).
+- Measure RAM before loading (`scripts/hardware_report.py`); never hold two fp32
+  0.6B models at once on the 5.7 GiB laptop. Kaggle (`kaggle/qwen3_inference/`) only
+  when the local run is not safe, and only with an explicit objective.
+- Commit only small result files (`results/m2/*.json|csv|png`), never tensors or logs.
+
 ## Secrets
 Never read, print, copy or commit credentials (Kaggle, GitHub, HF). Kaggle auth
 lives in `~/.kaggle/` or env vars outside the repo. Never push a Kaggle kernel or

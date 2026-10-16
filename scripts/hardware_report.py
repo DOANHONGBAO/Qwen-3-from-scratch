@@ -14,6 +14,7 @@ import shutil
 from pathlib import Path
 
 from qwen3_scratch.config import QWEN3_0_6B_BASE
+from qwen3_scratch.kv_cache import kv_cache_bytes
 from qwen3_scratch.sysinfo import GiB, system_summary
 
 REPO = Path(__file__).resolve().parents[1]
@@ -21,18 +22,6 @@ REPO = Path(__file__).resolve().parents[1]
 # Overheads used for the estimates (rationale in docs/hardware_assessment.md):
 FRAMEWORK_OVERHEAD = 0.45 * GiB  # Python + torch CPU runtime + allocator slack (measured ~0.3-0.5)
 SAFETY_FRACTION = 0.85  # never plan to use more than 85% of MemAvailable
-
-
-def kv_cache_bytes(cfg, seq_len: int, *, bytes_per_element: int = 2) -> int:
-    """K and V for every layer: 2 * L * Nkv * T * D * bytes (batch 1)."""
-    return (
-        2
-        * cfg.num_hidden_layers
-        * cfg.num_key_value_heads
-        * seq_len
-        * cfg.head_dim
-        * bytes_per_element
-    )
 
 
 def estimates() -> dict:

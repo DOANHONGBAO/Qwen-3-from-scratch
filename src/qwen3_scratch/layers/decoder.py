@@ -22,6 +22,7 @@ import torch
 from torch import nn
 
 from qwen3_scratch.config import Qwen3Config
+from qwen3_scratch.kv_cache import KVCache
 from qwen3_scratch.layers.attention import AttentionTrace, GroupedQueryAttention
 from qwen3_scratch.layers.rmsnorm import RMSNorm
 from qwen3_scratch.layers.swiglu import SwiGLUFeedForward
@@ -46,7 +47,7 @@ class Qwen3DecoderLayer(nn.Module):
     """One Qwen3 transformer block.
 
     Args mirror :class:`~qwen3_scratch.config.Qwen3Config`; use :meth:`from_config`.
-    ``layer_idx`` is stored for bookkeeping (a future KV cache indexes layers by it).
+    ``layer_idx`` selects this layer's slot in a :class:`~qwen3_scratch.kv_cache.KVCache`.
     """
 
     def __init__(
@@ -104,17 +105,27 @@ class Qwen3DecoderLayer(nn.Module):
         sin: torch.Tensor,
         attention_mask: torch.Tensor | None = None,
         *,
+        kv_cache: KVCache | None = None,
         return_trace: bool = False,
     ) -> torch.Tensor | tuple[torch.Tensor, DecoderTrace]:
         """``[B, T, H] -> [B, T, H]``.
 
         ``cos``/``sin`` and ``attention_mask`` are passed unchanged to
         :class:`GroupedQueryAttention` (boolean "may attend" mask; default causal).
+        With ``kv_cache`` the attention appends this layer's new K/V to cache layer
+        ``self.layer_idx`` and attends over all cached tokens; the MLP and norms act
+        on the new tokens only (they are position-wise).
         """
         residual = hidden_states  # 1. save the residual stream
         normed = self.input_layernorm(hidden_states)  # 2. pre-norm
         attn_out = self.self_attn(  # 3. causal self-attention
-            normed, cos, sin, attention_mask, return_trace=return_trace
+            normed,
+            cos,
+            sin,
+            attention_mask,
+            kv_cache=kv_cache,
+            layer_idx=self.layer_idx,
+            return_trace=return_trace,
         )
         attn_trace = None
         if return_trace:

@@ -260,3 +260,29 @@ and the uncached benchmark is limited to prompts ≤ 128 tokens. Everything ran 
 on the maintainer's machine; the Kaggle fallback kernel is prepared but was not needed
 and was not submitted. Details: `docs/hardware_assessment.md`. **Accepted.**
 
+## D-038 · 2026-10-16 · KV cache: caller-owned, per-layer, post-RoPE, native KV heads
+`KVCache` stores `[B, Nkv, T, D]` keys (after QK-Norm and RoPE) and values per layer
+and grows by `torch.cat`. The caller creates and owns it; the model appends in place
+when `use_cache=True` and never keeps it. Each layer may append once per forward
+(`commit` after the last layer; `rollback` on exceptions); capacity, batch, heads,
+dtype and device are validated. Positions continue from `seq_len`; masks are built
+from absolute indices. Padding masks with a cache are rejected (`NotImplementedError`).
+Pre-allocated/paged caches are deferred to optimisation work. **Accepted.**
+
+## D-039 · 2026-10-16 · Generation semantics
+`generate()` does prefill + one-token decode steps with the cache (or full
+recomputation without it) under `inference_mode`, using `logits_to_keep=1`. Token
+selection on float32 logits: greedy if `do_sample=False` or `temperature == 0`; else
+temperature → top-k (ties kept) → top-p (minimal nucleus, top-1 kept) → softmax →
+`multinomial` with an explicit generator (`seed=`). top-k/top-p without sampling is a
+configuration error. Finished rows keep emitting EOS; the loop stops when all rows are
+finished. `greedy_generate` (M1.6) remains as an uncached-by-default wrapper. **Accepted.**
+
+## D-040 · 2026-10-16 · Benchmark methodology
+`scripts/benchmark_generation.py` times prefill (first forward over the prompt) and
+every decode step separately, reports decode tokens/s = (N − 1) / decode time (never
+end-to-end throughput), resets peak RSS (`/proc/self/clear_refs`) per case, uses one
+warm-up, 2 repeats (median), fixed threads, synthetic prompt ids, greedy decoding with
+EOS ignored, and checkpoint download excluded. Uncached cases beyond the time budget
+are marked SKIPPED, never extrapolated. Cached vs uncached logits and tokens are
+compared for every case that ran both. **Accepted.**

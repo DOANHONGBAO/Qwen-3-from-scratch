@@ -11,14 +11,15 @@ grouped-query attention with per-head QK-Norm, KV cache, ...) is written by hand
 explained mathematically, and unit-tested. Hugging Face `transformers` is used only
 as a *reference* to verify numbers, never as the implementation.
 
-> **Status: M1 in progress.** Implemented and verified bit-identical to the
-> Hugging Face Qwen3 modules: RMSNorm (M1.1), SwiGLU (M1.2), RoPE (M1.3) and
-> QK-Norm + grouped-query attention (M1.4) and the decoder block (M1.5).
-> **M1.6:** a complete, configurable Tiny Qwen3 causal LM (embedding → decoder stack →
-> final norm → tied LM head, loss, greedy generation) whose logits, loss and gradients
-> are bit-identical to Hugging Face `Qwen3ForCausalLM` with the same weights.
-> Its weights are **random**: it is an architecture check, not a pretrained model.
-> Checkpoint loading, tokenizer and KV cache come in M2. See [docs/roadmap.md](docs/roadmap.md).
+> **Status: M2 complete (pending review).** Every component (RMSNorm, SwiGLU, RoPE,
+> QK-Norm + grouped-query attention, decoder block, full causal LM) is bit-identical to
+> the Hugging Face Qwen3 modules (M1). **M2.1:** the official **Qwen3-0.6B-Base**
+> weights load into *our* model through an explicit, strict name map, with the official
+> tokenizer; its hidden states, logits and greedy tokens are compared with Hugging Face
+> on real prompts ([results](docs/progress.md)). **M2.2:** our own KV cache and
+> generation loop (greedy, temperature, top-k, top-p) with cached-vs-uncached
+> verification and CPU benchmarks. Next: the C++20 port (M3). See
+> [docs/roadmap.md](docs/roadmap.md).
 
 ## Target model
 
@@ -48,6 +49,34 @@ is hardcoded. Presets live in [`configs/`](configs/).
    benchmarks, with GPU runs on Kaggle when needed.
 
 The module map is documented in [docs/architecture.md](docs/architecture.md).
+
+## Run the real Qwen3-0.6B-Base with this implementation
+
+Qwen3-0.6B-Base is a *base* model: give it the beginning of a text, not a chat
+instruction. Downloads ~1.2 GB once into the Hugging Face cache (pinned revision);
+needs ~3.5 GiB of free RAM in float32.
+
+```bash
+pip install -e ".[hf]"
+python scripts/run_pretrained_qwen3.py --download --prompt "Artificial intelligence is" --max-new-tokens 32
+python scripts/run_pretrained_qwen3.py --download --prompt "Hà Nội là thủ đô của" \
+    --do-sample --temperature 0.7 --top-p 0.9 --seed 0 --stream
+bash scripts/m2_local_run.sh     # full M2 run: hardware, download, tests, HF parity, benchmark
+```
+
+```python
+import torch
+from qwen3_scratch.generation import generate
+from qwen3_scratch.pretrained import download_checkpoint, load_pretrained
+from qwen3_scratch.tokenizer import Qwen3Tokenizer
+
+path = download_checkpoint()  # Qwen/Qwen3-0.6B-Base @ da87bfb
+model, report = load_pretrained(path)  # OUR Qwen3ForCausalLM, float32, strict mapping
+tok = Qwen3Tokenizer.from_pretrained(path)
+ids = tok.encode("The capital of France is")
+out = generate(model, torch.tensor([ids]), max_new_tokens=16, eos_token_id=tok.eos_token_id)
+print(tok.decode(out.sequences[0]))
+```
 
 ## Try the Tiny Qwen3
 
@@ -88,9 +117,10 @@ Manual alternative and troubleshooting: [docs/environment.md](docs/environment.m
 ### CPU limitations
 
 Development and all foundational tests run on a CPU-only machine. Unit tests use
-the tiny configuration and finish in seconds. The full 0.6B model (~1.2 GB in
-bfloat16) fits in RAM for inference on CPU in M2 but will be slow; training is out
-of scope. GPU work is optional and runs on Kaggle ([docs/kaggle.md](docs/kaggle.md)).
+the tiny configuration and finish in seconds. The full 0.6B model runs on a 2-core
+laptop CPU in float32 with the KV cache (measured numbers:
+[docs/hardware_assessment.md](docs/hardware_assessment.md), [docs/progress.md](docs/progress.md));
+training is out of scope. GPU work is optional and runs on Kaggle ([docs/kaggle.md](docs/kaggle.md)).
 
 ## Tests are split into three tiers
 
@@ -107,7 +137,8 @@ src/qwen3_scratch/   Python package (one module per model component)
 tests/               pytest suite (CPU / GPU / weights tiers)
 configs/             model presets + official HF config copy
 cpp/                 C++20 port (CMake + CTest)
-scripts/             environment setup/validation, C++ build, Kaggle auth check
+scripts/             environment, C++ build, Kaggle auth, M2 parity/inference/benchmark
+results/m2/          small JSON/CSV/PNG results of the M2 runs (no tensors, no weights)
 kaggle/              Kaggle kernel templates (never auto-pushed)
 notebooks/           explanatory notebooks
 docs/                roadmap, architecture, environment, references, decisions, progress
@@ -117,7 +148,8 @@ docs/                roadmap, architecture, environment, references, decisions, 
 
 - [Roadmap](docs/roadmap.md) — milestones, checklists, acceptance criteria
 - [Architecture](docs/architecture.md) — Qwen3 math, shapes, module map, test conventions
-- Components: [RMSNorm](docs/components/rmsnorm.md) · [SwiGLU](docs/components/swiglu.md) · [RoPE](docs/components/rope.md) · [QK-Norm](docs/components/qk_norm.md) · [Attention](docs/components/attention.md) · [Decoder block](docs/components/decoder.md) · [Full model](docs/components/model.md)
+- Components: [RMSNorm](docs/components/rmsnorm.md) · [SwiGLU](docs/components/swiglu.md) · [RoPE](docs/components/rope.md) · [QK-Norm](docs/components/qk_norm.md) · [Attention](docs/components/attention.md) · [Decoder block](docs/components/decoder.md) · [Full model](docs/components/model.md) · [Official weights & tokenizer](docs/components/pretrained.md) · [KV cache & generation](docs/components/kv_cache.md)
+- [Hardware assessment](docs/hardware_assessment.md) — measured machine, memory model, local vs Kaggle
 - [Environment](docs/environment.md) — reproducible setup
 - [References](docs/references.md) — sources, licenses, reference discrepancies
 - [Decisions](docs/decisions.md) — technical decision log

@@ -22,8 +22,10 @@ Numerics follow Hugging Face eager attention (``Qwen3Attention`` +
 softmax computed in float32 then cast back to the activation dtype, no dropout
 (``attention_dropout = 0.0``).
 
-This first version materialises the repeated K/V heads for clarity; the KV cache
-(M2) and the C++ port will index the shared heads instead (see docs/components/attention.md).
+KV cache (M2.2): with ``kv_cache`` given, the rotated keys and the values of the
+``T`` new tokens are appended to the cache (native ``Nkv`` heads), and the queries
+attend over all ``T_past + T`` cached keys. Grouped heads are expanded only for the
+score computation, never stored. Scores are then ``[B, Nq, T, T_past + T]``.
 """
 
 from __future__ import annotations
@@ -34,6 +36,7 @@ import torch
 from torch import nn
 
 from qwen3_scratch.config import Qwen3Config
+from qwen3_scratch.kv_cache import KVCache
 from qwen3_scratch.layers.qk_norm import apply_qk_norm
 from qwen3_scratch.layers.rmsnorm import RMSNorm
 from qwen3_scratch.layers.rope import apply_rope_to_qk
@@ -168,11 +171,11 @@ class AttentionTrace:
     q_normed: torch.Tensor  # [B, Nq, T, D]
     k_normed: torch.Tensor  # [B, Nkv, T, D]
     q_rope: torch.Tensor  # [B, Nq, T, D]
-    k_rope: torch.Tensor  # [B, Nkv, T, D]
-    k_grouped: torch.Tensor  # [B, Nq, T, D]
-    v_grouped: torch.Tensor  # [B, Nq, T, D]
-    scores: torch.Tensor  # [B, Nq, T, T], scaled, -inf where masked
-    probs: torch.Tensor  # [B, Nq, T, T]
+    k_rope: torch.Tensor  # [B, Nkv, T, D] (new tokens only)
+    k_grouped: torch.Tensor  # [B, Nq, T_k, D], T_k = T_past + T (= T without a cache)
+    v_grouped: torch.Tensor  # [B, Nq, T_k, D]
+    scores: torch.Tensor  # [B, Nq, T, T_k], scaled, -inf where masked
+    probs: torch.Tensor  # [B, Nq, T, T_k]
     context: torch.Tensor  # [B, T, Nq*D], merged heads before o_proj
     output: torch.Tensor  # [B, T, H]
 
@@ -250,9 +253,11 @@ class GroupedQueryAttention(nn.Module):
         sin: torch.Tensor,
         attention_mask: torch.Tensor | None = None,
         *,
+        kv_cache: KVCache | None = None,
+        layer_idx: int | None = None,
         return_trace: bool = False,
     ) -> torch.Tensor | tuple[torch.Tensor, AttentionTrace]:
-        """Full-sequence self-attention.
+        """Self-attention over the ``T`` new tokens (plus cached tokens, if any).
 
         Args:
             hidden_states: ``[B, T, H]``.
@@ -262,7 +267,14 @@ class GroupedQueryAttention(nn.Module):
             attention_mask: optional boolean "may attend" mask ``[T, T]``, ``[B, T, T]``
                 or ``[B, 1 | Nq, T, T]``. Default: causal over the ``T`` tokens of this
                 call (query and key positions are the same tokens). Combine padding
-                masks with :func:`causal_mask` explicitly.
+                masks with :func:`causal_mask` explicitly. With a cache the mask covers
+                ``[T, T_past + T]``; the default then uses absolute indices: query ``i``
+                sits at index ``T_past + i`` and sees keys ``0 .. T_past + i``.
+            kv_cache: optional :class:`~qwen3_scratch.kv_cache.KVCache`; the new
+                post-RoPE keys and values are appended to layer ``layer_idx`` in place.
+                ``cos``/``sin`` must then be the tables of the ABSOLUTE positions of the
+                new tokens (``T_past .. T_past + T - 1``), not ``0 .. T - 1``.
+            layer_idx: which cache layer to use (required with ``kv_cache``).
             return_trace: also return an :class:`AttentionTrace`.
         """
         if not isinstance(hidden_states, torch.Tensor) or hidden_states.dim() != 3:
@@ -291,15 +303,24 @@ class GroupedQueryAttention(nn.Module):
         # 6. RoPE on queries and keys (same tables for all heads)
         q, k = apply_rope_to_qk(q, k, cos, sin)
 
-        # 7. grouped KV heads: query head h reads kv head h // g
-        k_grp = repeat_kv(k, self.num_kv_groups)
-        v_grp = repeat_kv(v, self.num_kv_groups)
+        # 6b. KV cache: store the NEW rotated keys / values, attend over everything cached.
+        k_all, v_all = k, v
+        if kv_cache is not None:
+            if layer_idx is None:
+                raise ValueError("layer_idx is required when kv_cache is given")
+            k_all, v_all = kv_cache.update(layer_idx, k, v)  # [B, Nkv, T_past + T, D]
+        t_k = k_all.shape[2]
+
+        # 7. grouped KV heads: query head h reads kv head h // g (expanded, not stored)
+        k_grp = repeat_kv(k_all, self.num_kv_groups)
+        v_grp = repeat_kv(v_all, self.num_kv_groups)
 
         # 8-10. scaled scores, causal mask before softmax, float32 softmax
-        scores = torch.matmul(q, k_grp.transpose(2, 3)) * self.scaling  # [B, Nq, T, T]
+        scores = torch.matmul(q, k_grp.transpose(2, 3)) * self.scaling  # [B, Nq, T, T_k]
         if attention_mask is None:
-            pos = torch.arange(t, device=hidden_states.device)
-            attention_mask = causal_mask(pos, pos)
+            dev = hidden_states.device
+            q_idx = torch.arange(t_k - t, t_k, device=dev)  # absolute indices of the queries
+            attention_mask = causal_mask(q_idx, torch.arange(t_k, device=dev))
         allowed = _broadcast_mask(attention_mask, scores)
         probs = attention_softmax(scores, allowed)
 

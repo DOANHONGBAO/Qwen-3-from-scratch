@@ -103,7 +103,7 @@ def test_tokenizer_matches_transformers(weights_dir) -> None:
 
 
 @pytest.mark.slow
-def test_float32_model_loads_and_is_deterministic(weights_dir) -> None:
+def test_float32_model_cached_equals_uncached(weights_dir) -> None:
     from qwen3_scratch.pretrained import load_pretrained
     from qwen3_scratch.tokenizer import Qwen3Tokenizer
 
@@ -112,6 +112,15 @@ def test_float32_model_loads_and_is_deterministic(weights_dir) -> None:
     tok = Qwen3Tokenizer.from_pretrained(weights_dir)
     ids = torch.tensor([tok.encode("The quick brown fox jumps over the lazy dog")])
     with torch.inference_mode():
-        a = model(ids).logits
-        b = model(ids).logits
-    assert torch.isfinite(a).all() and torch.equal(a, b)
+        full = model(ids).logits
+        cache = model.new_cache()
+        parts = [model(ids[:, :4], past_key_values=cache, use_cache=True).logits]
+        parts += [
+            model(ids[:, t : t + 1], past_key_values=cache, use_cache=True).logits
+            for t in range(4, ids.shape[1])
+        ]
+    cached = torch.cat(parts, 1)
+    # logits of the real model are O(10); float32 reordering error is ~1e-5 relative
+    # (argmax equality is NOT asserted: a near-tie may legitimately flip; the parity
+    # script reports such positions with their top-2 margin instead)
+    torch.testing.assert_close(cached, full, atol=1e-3, rtol=1e-4)

@@ -29,4 +29,12 @@ mkdir -p "${DST}"
 find "${SRC}" -maxdepth 1 -type f ! -name 'kernel-metadata.template.json' -exec cp {} "${DST}/" \;
 sed "s/KAGGLE_USERNAME/${KAGGLE_USERNAME}/" "${SRC}/kernel-metadata.template.json" \
   > "${DST}/kernel-metadata.json"
+# Pin the source version for kernels that clone the repository (qwen3_inference).
+COMMIT="$(git -C "${REPO_ROOT}" rev-parse HEAD)"
+for f in "${DST}"/*.py; do
+  sed -i "s/COMMIT_SHA/${COMMIT}/" "$f"
+done
+if ! git -C "${REPO_ROOT}" branch -r --contains "${COMMIT}" | grep -q .; then
+  echo "WARNING: ${COMMIT} is not on any remote branch; push it before running the kernel." >&2
+fi
 echo "Prepared ${DST} (not pushed)."

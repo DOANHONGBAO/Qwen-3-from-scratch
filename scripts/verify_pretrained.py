@@ -11,8 +11,8 @@ The two models are never in memory together. The script runs two child processes
    layer output, the final RMSNorm, the logits (forward hooks) and greedy token ids
    from ``transformers.generate``; saves them to ``<out>/reference_<dtype>.safetensors``.
 2. ``--phase ours``: OUR model (``load_pretrained``) and OUR tokenizer adapter do the
-   same and compare against the saved reference; then our greedy generation is
-   compared with HF's token ids.
+   same and compare against the saved reference; then greedy generation with and
+   without the KV cache is compared with HF's token ids and with each other.
 
 Output: ``<out>/parity_<dtype>.json`` (all metrics) and a printed summary.
 Exit code 0 only if every check passes. Tolerances (rel = ||a-b|| / ||b||):
@@ -184,7 +184,7 @@ def phase_ours(args) -> None:
     import torch
     from safetensors.torch import load_file
 
-    from qwen3_scratch.generation import greedy_generate
+    from qwen3_scratch.generation import generate
     from qwen3_scratch.pretrained import load_pretrained
     from qwen3_scratch.tokenizer import Qwen3Tokenizer
 
@@ -253,26 +253,51 @@ def phase_ours(args) -> None:
                 "hf": int(ref[f"p{p_idx}.logits"][-1].argmax()),
                 "text": tok.decode([int(logits[-1].argmax())], skip_out_of_vocab=True),
             }
-            # greedy generation (full recomputation each step) vs transformers.generate
+            # greedy generation: ours (cache / no cache) vs transformers.generate
             hf_gen = ref[f"p{p_idx}.generated"]
-            ours_gen = greedy_generate(
-                model, ids, args.max_new_tokens, eos_token_id=tok.eos_token_id
-            )[0]
-            n_cmp = min(len(ours_gen), len(hf_gen))
+            eos = tok.eos_token_id
+            cached = generate(
+                model,
+                ids,
+                max_new_tokens=args.max_new_tokens,
+                eos_token_id=eos,
+                use_cache=True,
+                return_step_logits=True,
+            )
+            n_uncached = min(args.max_new_tokens, args.uncached_tokens)
+            uncached = generate(
+                model,
+                ids,
+                max_new_tokens=n_uncached,
+                eos_token_id=eos,
+                use_cache=False,
+                return_step_logits=True,
+            )
+            step_diff = [
+                float((a - b).abs().max())
+                for a, b in zip(cached.step_logits, uncached.step_logits, strict=False)
+            ]
+            n_cmp = min(len(cached.sequences[0]), len(hf_gen))
             entry["generation"] = {
-                "ours_ids": ours_gen.tolist(),
+                "ours_cached_ids": cached.sequences[0].tolist(),
                 "hf_ids": hf_gen.tolist(),
-                "ids_equal_hf": ours_gen.tolist() == hf_gen.tolist(),
+                "ids_equal_hf": cached.sequences[0].tolist() == hf_gen.tolist(),
                 "first_mismatch": next(
-                    (i for i in range(n_cmp) if int(ours_gen[i]) != int(hf_gen[i])), None
+                    (i for i in range(n_cmp) if int(cached.sequences[0, i]) != int(hf_gen[i])), None
                 ),
-                "text_ours": tok.decode(ours_gen[ids.shape[1] :], skip_out_of_vocab=True),
+                "cached_vs_uncached_prefix_equal": cached.sequences[
+                    0, : uncached.sequences.shape[1]
+                ].tolist()
+                == uncached.sequences[0].tolist(),
+                "cached_vs_uncached_max_logit_diff": max(step_diff) if step_diff else 0.0,
+                "text_ours": tok.decode(cached.new_tokens[0], skip_out_of_vocab=True),
                 "text_hf": ref_meta["prompts"][p_idx]["generated_text"],
             }
             result["prompts"].append(entry)
             for key, ok in (
                 ("hidden_and_logits_within_tolerance", first_bad is None),
                 ("greedy_ids_equal_hf", entry["generation"]["ids_equal_hf"]),
+                ("cached_equals_uncached", entry["generation"]["cached_vs_uncached_prefix_equal"]),
             ):
                 checks[key] = checks.get(key, True) and ok
     result["checks"] = checks
@@ -323,6 +348,12 @@ def main() -> None:
     parser.add_argument("--dtype", choices=sorted(TOLERANCE), default="float32")
     parser.add_argument("--threads", type=int, default=max(1, (os.cpu_count() or 2) // 2))
     parser.add_argument("--max-new-tokens", type=int, default=16)
+    parser.add_argument(
+        "--uncached-tokens",
+        type=int,
+        default=8,
+        help="tokens generated WITHOUT cache for the cached/uncached check",
+    )
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     parser.add_argument("--phase", choices=["all", "reference", "ours"], default="all")
     parser.add_argument("--force", action="store_true", help="skip the free-RAM guard")
@@ -375,6 +406,8 @@ def main() -> None:
         str(args.threads),
         "--max-new-tokens",
         str(args.max_new_tokens),
+        "--uncached-tokens",
+        str(args.uncached_tokens),
         "--out",
         args.out,
     ]

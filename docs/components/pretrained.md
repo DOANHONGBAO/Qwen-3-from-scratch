@@ -102,7 +102,7 @@ Special-token text in the input becomes the special id (as in transformers); pas
 `allow_special_tokens=False` to reject it. `decode` rejects ids outside the tokenizer
 vocabulary unless `skip_out_of_vocab=True` (a model can, in principle, pick a padded
 row). `encode_batch(padding=True, padding_side=...)` returns ids and masks; padded
-batches are not supported by generation.
+batches are not supported by the cached generation path.
 
 ## 5. Parity procedure (`scripts/verify_pretrained.py`)
 
@@ -115,8 +115,8 @@ Never two models in memory: two child processes.
 2. **ours**: `load_pretrained` + `Qwen3Tokenizer`; same hooks on the **same token ids**;
    per tensor: max/mean absolute error, RMS error, relative L2; first diverging tensor;
    top-1 agreement and top-5 overlap of the logits, with the reference top-2 margin of any
-   disagreeing position (near-ties are reported, not hidden); greedy ids vs HF
-   (the KV-cache checks are added in M2.2).
+   disagreeing position (near-ties are reported, not hidden); greedy ids with the KV
+   cache vs HF; cached vs uncached step logits.
 
 Prompts (text completion; Qwen3-0.6B-Base is not a chat model):
 `"Artificial intelligence is"`, `"The capital of France is"`, `"Hà Nội là thủ đô của"`,
@@ -135,7 +135,8 @@ torch 2.14.1+cpu, 2 threads):
 | embeddings, all 28 layer outputs, final norm, logits: max \|Δ\| | **0** (bit-identical) | **0** |
 | top-1 / top-5 agreement of the logits (every position) | 1.000 / 1.000 | 1.000 / 1.000 |
 | smallest reference top-2 margin (near-tie check) | 0.0625 (Vietnamese prompt) | 0.125 |
-| greedy ids (16 tokens) vs `transformers.generate` | identical, 5/5 prompts | identical |
+| greedy ids (16 tokens, our KV cache) vs `transformers.generate` | identical, 5/5 prompts | identical |
+| cached vs uncached step logits (8 steps), max \|Δ\| | 2.4e-5 – 3.0e-5 | 0 |
 | verdict | **PASSED** | **PASSED** |
 
 Greedy completions of our model (identical to HF):
@@ -170,5 +171,5 @@ then `python scripts/verify_pretrained.py --model-dir /tmp/q3` (random weights, 
 
 ## 7. Limitations
 
-No padded-batch generation; no sliding-window or scaled RoPE; CPU-only
+No padded batches with the KV cache; no sliding-window or scaled RoPE; CPU-only
 validation (GPU is M4); float16 loading is possible but untested against a reference.

@@ -135,7 +135,7 @@ def attention_fixture() -> dict[str, Any]:
 
 
 def _tiny_model():
-    """The fixture model of model_tiny.json."""
+    """The fixture model shared by model_tiny.json and kv_cache_tiny.json."""
     from qwen3_scratch.model import Qwen3ForCausalLM
 
     seed = 7
@@ -195,6 +195,90 @@ def model_fixture() -> dict[str, Any]:
     }
 
 
+def kv_cache_fixture() -> dict[str, Any]:
+    """Prefill + cached single-token decode on the model_tiny.json weights."""
+    seed, cfg, model = _tiny_model()
+    prompt = torch.tensor([[3, 14, 1, 5, 9]])
+    decode_ids = [7, 2, 11]  # fed one at a time after the prefill (teacher forcing)
+    outputs: dict[str, Any] = {}
+    with torch.no_grad():
+        cache = model.new_cache()
+        out = model(prompt, past_key_values=cache, use_cache=True)
+        outputs["prefill_logits"] = _tensor(out.logits)
+        for layer in range(cfg.num_hidden_layers):
+            k, v = cache.get(layer)
+            outputs[f"prefill_key_layer{layer}"] = _tensor(k)
+            outputs[f"prefill_value_layer{layer}"] = _tensor(v)
+        for step, tok in enumerate(decode_ids):
+            out = model(torch.tensor([[tok]]), past_key_values=cache, use_cache=True)
+            outputs[f"decode_logits_step{step}"] = _tensor(out.logits)
+        for layer in range(cfg.num_hidden_layers):
+            k, v = cache.get(layer)
+            outputs[f"final_key_layer{layer}"] = _tensor(k)
+            outputs[f"final_value_layer{layer}"] = _tensor(v)
+        full = model(torch.tensor([prompt[0].tolist() + decode_ids])).logits
+        outputs["full_forward_logits"] = _tensor(full)
+    n_prompt = prompt.shape[1]
+    return {
+        "component": "kv_cache_decode",
+        "description": (
+            "Weights = model_tiny.json (same seed). 1) prefill: input_ids = prompt, "
+            "position_ids 0..4, cache empty -> prefill_logits and per-layer K/V. "
+            "2) decode: feed decode_ids one at a time, position_ids = 5, 6, 7 "
+            "(= cache length before the step), attending over all cached keys "
+            "-> decode_logits_step{i}. Cache layout per layer: key/value "
+            "[B, num_key_value_heads, T_cached, head_dim], row-major, keys stored AFTER "
+            "QK-Norm and RoPE, values raw. full_forward_logits = uncached forward over "
+            "prompt + decode_ids: its last 3 rows equal the decode logits up to rounding."
+        ),
+        "seed": seed,
+        "config": cfg.to_dict(),
+        "tolerance": {"rtol": 1e-5, "atol": 1e-5},
+        "inputs": {
+            "prompt_ids": prompt.tolist(),
+            "prompt_position_ids": [list(range(n_prompt))],
+            "decode_ids": decode_ids,
+            "decode_position_ids": [n_prompt + i for i in range(len(decode_ids))],
+        },
+        "parameters": {},
+        "outputs": outputs,
+    }
+
+
+def sampling_fixture() -> dict[str, Any]:
+    """Deterministic parts of token selection: temperature, top-k, top-p, greedy."""
+    from qwen3_scratch.generation import apply_top_k, apply_top_p
+
+    gen = torch.Generator().manual_seed(11)
+    logits = (2.0 * torch.randn(2, 10, generator=gen)).to(torch.float32)
+    temperature, k, p = 0.7, 4, 0.8
+    scaled = logits / temperature
+    probs = lambda z: torch.softmax(z, dim=-1)  # noqa: E731
+    return {
+        "component": "sampling_filters",
+        "description": (
+            "Rows of logits [B, V] (float32). Order: logits / temperature -> top-k "
+            "(keep values >= k-th largest; ties kept) -> top-p (drop a token when the "
+            "probability mass of strictly better tokens is already >= p; top-1 always "
+            "kept) -> softmax. Removed tokens have probability exactly 0. greedy_ids = "
+            "argmax of the raw logits (lowest index on ties). The random draw "
+            "(torch.multinomial) is NOT part of the contract: RNGs differ across languages."
+        ),
+        "seed": 11,
+        "config": {"temperature": temperature, "top_k": k, "top_p": p},
+        "tolerance": {"rtol": 1e-6, "atol": 1e-7},
+        "inputs": {"logits": _tensor(logits)},
+        "parameters": {},
+        "outputs": {
+            "probs_temperature": _tensor(probs(scaled)),
+            "probs_top_k": _tensor(probs(apply_top_k(scaled, k))),
+            "probs_top_p": _tensor(probs(apply_top_p(scaled, p))),
+            "probs_top_k_top_p": _tensor(probs(apply_top_p(apply_top_k(scaled, k), p))),
+            "greedy_ids": _tensor(logits.argmax(-1).to(torch.float32)),
+        },
+    }
+
+
 def weight_map_fixture() -> dict[str, Any]:
     """Checkpoint tensor names and shapes for Qwen3-0.6B-Base (the loader contract)."""
     from qwen3_scratch.config import QWEN3_0_6B_BASE
@@ -224,7 +308,9 @@ def weight_map_fixture() -> dict[str, Any]:
 FIXTURES: dict[str, Callable[[], dict[str, Any]]] = {
     "attention_small.json": attention_fixture,
     "checkpoint_name_map.json": weight_map_fixture,
+    "kv_cache_tiny.json": kv_cache_fixture,
     "model_tiny.json": model_fixture,
+    "sampling_small.json": sampling_fixture,
     "rope_small.json": rope_fixture,
     "swiglu_small.json": swiglu_fixture,
 }
