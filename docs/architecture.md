@@ -39,7 +39,7 @@ out    = softmax(scores) v                    -> (B, H, T, d_h) -> (B, T, H·d_h
 
 | # | Component | Math (summary) | In → out shape | Milestone |
 |---|---|---|---|---|
-| 1 | RMSNorm | `y = x / sqrt(mean(x², -1) + ε) ⊙ w` (computed in fp32) | `(..., n) → (..., n)` | M1.1 |
+| 1 | RMSNorm | `y = x / sqrt(mean(x², -1) + ε) ⊙ w` (computed in fp32) — [details](components/rmsnorm.md) | `(..., n) → (..., n)` | M1.1 **done** |
 | 2 | SwiGLU FeedForward | `down( silu(gate(x)) ⊙ up(x) )` | `(B,T,d) → (B,T,d)` via `d_ff` | M1.2 |
 | 3 | RoPE | rotate pairs `(x_i, x_{i+d_h/2})` by `p·θ^{-2i/d_h}` ("rotate_half" layout) | `(B,H,T,d_h) → same` | M1.3 |
 | 4 | QK-Norm | RMSNorm over `d_h` of each Q and K head, **before** RoPE | `(B,T,H,d_h) → same` | M1.4 |
@@ -73,7 +73,7 @@ can be written module-by-module.
 |---|---|---|
 | `config.py` — `Qwen3Config`, presets | `include/qwen3/config.hpp`, `src/config.cpp` | **M0: done** |
 | `env.py` — environment checks | — (Python tooling only) | **M0: done** |
-| `layers/rmsnorm.py` | `include/qwen3/rmsnorm.hpp` | M1.1 / M3 |
+| `layers/rmsnorm.py` — `RMSNorm`, `rms_norm`, `rms_norm_textbook` | `include/qwen3/rmsnorm.hpp` (requirements: [rmsnorm.md §9](components/rmsnorm.md#9-requirements-for-the-c20-port-m3)) | **M1.1: done** / M3 |
 | `layers/feedforward.py` | `include/qwen3/feedforward.hpp` | M1.2 / M3 |
 | `layers/rope.py` | `include/qwen3/rope.hpp` | M1.3 / M3 |
 | `layers/attention.py` (QK-Norm, mask, GQA) | `include/qwen3/attention.hpp` | M1.4–1.6 / M3 |

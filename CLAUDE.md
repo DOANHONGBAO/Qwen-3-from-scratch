@@ -50,7 +50,8 @@ start a GPU session without an explicit experimental objective from the user.
 1. `git status` + branch. 2. Read related code/docs. 3. Short plan.
 4. Smallest change. 5. Run tests/linters. 6. Review diff; check for secrets and
 large files. 7. Update docs (`docs/progress.md`, roadmap, decisions).
-8. Conventional Commit (`feat: implement rmsnorm`, `test: ...`, `docs: ...`).
+8. Conventional Commit (`feat: implement rmsnorm`, `test: ...`, `docs: ...`),
+   authored by the maintainer only: no `Co-Authored-By` or other agent trailers.
 9. Push (never force-push, never rewrite history, never delete branches).
 10. Report branch, commit SHA, push status.
 

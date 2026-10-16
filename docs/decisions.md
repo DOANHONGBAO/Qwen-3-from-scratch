@@ -42,7 +42,7 @@ CI and the laptop never need a GPU or weights. **Accepted.**
 ## D-008 · 2026-10-16 · Numerical precision order follows HF for parity
 Where the educational and official code differ only in cast order (RMSNorm, RoPE,
 softmax — discrepancies X5–X7), we follow HF so bf16 parity tests can be tight.
-**Proposed — confirm per component in M1.**
+**Proposed — confirm per component in M1.** RMSNorm: confirmed by D-013.
 
 ## D-009 · 2026-10-16 · Real weight tying
 When `tie_word_embeddings` is true the LM head will share the embedding
@@ -62,3 +62,29 @@ attribution because tests depend on it. **Accepted.**
 CTest runs a dependency-free executable. GoogleTest/Catch2 may be introduced in
 M3 if test volume justifies a dependency (would need network at configure time).
 **Accepted for M0.**
+
+## D-013 · 2026-10-16 · RMSNorm follows the HF `Qwen3RMSNorm` operation order
+Statistics in float32, cast the normalised activations back to the input dtype,
+then multiply by `weight` (initialised to ones, no `1 + w` offset). This makes our
+output bit-identical to HF in fp32/bf16/fp16 (tested), whereas the
+"scale-then-cast" order of R2 and `torch.nn.RMSNorm` differs by 1 bf16 ulp on
+~25 % of elements. The plain formula is kept separately as `rms_norm_textbook`
+for teaching and as a float64 reference. **Accepted.**
+
+## D-014 · 2026-10-16 · float64 inputs are not downcast in RMSNorm
+Compute dtype is `promote_types(x.dtype, float32)`: fp16/bf16/fp32 → fp32,
+float64 → float64. HF always uses float32 and would downcast float64. The
+difference only affects float64 inputs (tests, `gradcheck`), never the model;
+it is pinned by `tests/parity/test_rmsnorm_hf.py::test_documented_float64_difference`.
+**Accepted.**
+
+## D-015 · 2026-10-16 · HF parity tests are optional locally, required in CI
+Parity tests import `transformers` via `pytest.importorskip` and construct
+modules directly with random weights (no downloads). Locally they are SKIPPED
+unless the `hf` extra is installed; CI installs `.[dev,hf]` so they always run
+there. **Accepted.**
+
+## D-016 · 2026-10-16 · Notebooks are executed by the test suite
+`tests/test_notebooks.py` runs every notebook's code cells with `exec` (no Jupyter
+dependency) and fails if a notebook is committed with outputs. Keeps notebooks in
+sync with the package API. **Accepted.**

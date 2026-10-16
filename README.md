@@ -11,9 +11,10 @@ grouped-query attention with per-head QK-Norm, KV cache, ...) is written by hand
 explained mathematically, and unit-tested. Hugging Face `transformers` is used only
 as a *reference* to verify numbers, never as the implementation.
 
-> **Status: M0 — foundation.** The repository, environment, configuration schema,
-> test tiers, CI, C++ build scaffold and Kaggle templates are in place. No model
-> component is implemented yet. See [docs/roadmap.md](docs/roadmap.md).
+> **Status: M1 in progress.** M0 foundation is complete. M1.1 **RMSNorm** is
+> implemented and verified bit-identical to Hugging Face `Qwen3RMSNorm`
+> ([docs/components/rmsnorm.md](docs/components/rmsnorm.md)). See
+> [docs/roadmap.md](docs/roadmap.md).
 
 ## Target model
 
@@ -92,6 +93,7 @@ docs/                roadmap, architecture, environment, references, decisions, 
 
 - [Roadmap](docs/roadmap.md) — milestones, checklists, acceptance criteria
 - [Architecture](docs/architecture.md) — Qwen3 math, shapes, module map, test conventions
+- Components: [RMSNorm](docs/components/rmsnorm.md)
 - [Environment](docs/environment.md) — reproducible setup
 - [References](docs/references.md) — sources, licenses, reference discrepancies
 - [Decisions](docs/decisions.md) — technical decision log

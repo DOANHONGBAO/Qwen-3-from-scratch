@@ -7,12 +7,14 @@ and the explanation never drift apart.
 | Notebook | Milestone | Content |
 |---|---|---|
 | `00_environment_and_config.ipynb` | M0 | Environment report, `Qwen3Config`, parameter budget of Qwen3-0.6B |
+| `01_rmsnorm.ipynb` | M1.1 | RMSNorm: intuition, math, manual example, shapes, LayerNorm vs RMSNorm, HF parity, gradients, precision |
 
 Conventions:
 
 - Install the extra once: `pip install -e ".[notebooks]"`, then `jupyter lab`.
 - Commit notebooks **without outputs** (clear outputs before committing) to keep
-  diffs reviewable and avoid leaking local paths.
+  diffs reviewable and avoid leaking local paths. `tests/test_notebooks.py`
+  executes every notebook's code cells and enforces this.
 - Notebooks never download weights implicitly; any download cell (M2+) is
   explicit and writes outside Git-tracked folders.
 - Numbering: `NN_topic.ipynb`, matching roadmap items (e.g. `01_rmsnorm.ipynb` for M1.1).

@@ -30,7 +30,7 @@ secrets or weights in Git.
 Each item: math + shapes doc, implementation, synthetic example, tests (shape,
 values, determinism, invalid input), "common mistakes" notes.
 
-- [ ] M1.1 RMSNorm (fp32 compute, HF precision order; reference: manual formula and `torch.nn.functional.rms_norm`)
+- [x] M1.1 RMSNorm — `layers/rmsnorm.py`, 101 unit tests + 13 HF parity tests, gradcheck, notebook `01_rmsnorm.ipynb`, doc `docs/components/rmsnorm.md` (bit-identical to HF `Qwen3RMSNorm` in fp32/bf16/fp16)
 - [ ] M1.2 SwiGLU FeedForward
 - [ ] M1.3 RoPE (tables, `rotate_half`, offset; checks: norm preservation, relative-position property)
 - [ ] M1.4 QK-Norm (per-head RMSNorm before RoPE)
