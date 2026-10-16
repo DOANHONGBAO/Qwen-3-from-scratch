@@ -51,6 +51,11 @@ machine needs.
 | C++ (system) | `cmake`, `gcc-c++`, `ninja-build` | C++20 build and CTest | M3 (scaffold builds in M0) |
 
 Install extras with `pip install -e ".[notebooks]"`, `".[hf]"`, `".[kaggle]"`.
+M2 runs used, on the maintainer's Fedora machine: `transformers 5.20.0`,
+`safetensors 0.8.0`, `tokenizers 0.23.3`, `huggingface_hub 2.2.0` (recorded in every
+`results/m2/*.json` together with torch and Python versions). The `hf` extra is needed
+at runtime only for checkpoint loading (`safetensors`), the tokenizer (`tokenizers`)
+and downloading (`huggingface_hub`); `transformers` is used only as the reference.
 Fedora C++ tools: `sudo dnf install cmake gcc-c++ ninja-build` (needs sudo; only
 when you start M3 — or `conda install -c conda-forge cmake ninja` without sudo).
 
@@ -66,14 +71,17 @@ keeps compatible ranges so the package also installs elsewhere (CI, Kaggle).
 - No network access in tests; no checkpoint downloads outside explicit M2 steps.
 - Model weights and caches go to directories ignored by Git (`/weights/`,
   `/checkpoints/`, `/hf_cache/`) or outside the repo; point tests at them with
-  `QWEN3_WEIGHTS_DIR`.
+  `QWEN3_WEIGHTS_DIR`. M2 downloads the pinned revision into the standard HF cache
+  (`~/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B-Base/snapshots/da87bfb…`).
 - `torch.set_num_threads` may change float summation order; tests use tolerances.
 
 ## Hardware notes
 
 - Tiny-config tests need < 1 GB RAM and run in seconds.
-- Qwen3-0.6B in bf16 needs ~1.2 GB for weights (~2.4 GB in fp32) plus
-  activations; CPU inference is feasible but slow.
+- Qwen3-0.6B: weights 1.11 GiB in bf16, 2.22 GiB in fp32. Measured peak RSS of our
+  fp32 inference process: 2.7–3.4 GiB (see [hardware_assessment.md](hardware_assessment.md)).
+  Close the browser before the fp32 parity check, which loads HF and our model one
+  after the other.
 - GPU availability is checked, never assumed (`check_env.py` reports it as INFO).
 
 ## Troubleshooting

@@ -134,8 +134,8 @@ def attention_fixture() -> dict[str, Any]:
     }
 
 
-def model_fixture() -> dict[str, Any]:
-    """Whole Tiny Qwen3 forward: embeddings, every layer, final norm, logits, loss."""
+def _tiny_model():
+    """The fixture model of model_tiny.json."""
     from qwen3_scratch.model import Qwen3ForCausalLM
 
     seed = 7
@@ -158,6 +158,13 @@ def model_fixture() -> dict[str, Any]:
         for name, p in model.named_parameters():  # tied matrix appears once
             base = 1.0 if "norm" in name else 0.0
             p.copy_(base + 0.3 * torch.randn(p.shape, generator=gen))
+    return seed, cfg, model.eval()
+
+
+def model_fixture() -> dict[str, Any]:
+    """Whole Tiny Qwen3 forward: embeddings, every layer, final norm, logits, loss."""
+    seed, cfg, model = _tiny_model()
+    with torch.no_grad():
         ids = torch.tensor([[3, 14, 1, 5, 9]])
         out = model(ids, labels=ids, output_hidden_states=True)
     return {
@@ -188,8 +195,35 @@ def model_fixture() -> dict[str, Any]:
     }
 
 
+def weight_map_fixture() -> dict[str, Any]:
+    """Checkpoint tensor names and shapes for Qwen3-0.6B-Base (the loader contract)."""
+    from qwen3_scratch.config import QWEN3_0_6B_BASE
+    from qwen3_scratch.weight_loader import build_name_map, expected_shapes
+
+    shapes = expected_shapes(QWEN3_0_6B_BASE)
+    return {
+        "component": "checkpoint_name_map",
+        "description": (
+            "Every tensor of the official Qwen/Qwen3-0.6B-Base model.safetensors "
+            "(revision da87bfb), in loading order, with its shape; all stored as BF16, "
+            "row-major, nn.Linear weights as [out_features, in_features] (no transpose). "
+            "lm_head.weight is absent: tied to model.embed_tokens.weight."
+        ),
+        "seed": None,
+        "config": QWEN3_0_6B_BASE.to_dict(),
+        "tolerance": {"rtol": 0.0, "atol": 0.0},
+        "inputs": {
+            "tensors": [[n, list(shapes[n])] for n in build_name_map(QWEN3_0_6B_BASE)],
+            "num_values": sum(torch.Size(s).numel() for s in shapes.values()),
+        },
+        "parameters": {},
+        "outputs": {},
+    }
+
+
 FIXTURES: dict[str, Callable[[], dict[str, Any]]] = {
     "attention_small.json": attention_fixture,
+    "checkpoint_name_map.json": weight_map_fixture,
     "model_tiny.json": model_fixture,
     "rope_small.json": rope_fixture,
     "swiglu_small.json": swiglu_fixture,

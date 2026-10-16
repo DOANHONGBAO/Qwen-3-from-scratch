@@ -75,3 +75,9 @@ smoke_test_report.json
 # They are third-party code under their own licenses; we link to them instead
 # of redistributing them. See docs/references.md.
 /documents/
+
+# ------------------------------------------------ M2 local run outputs
+# Small JSON/CSV/PNG summaries in results/ are committed after review; raw logs
+# and reference tensors (*.safetensors, ignored above) are not.
+/results/**/logs/
+/results/**/steps.txt

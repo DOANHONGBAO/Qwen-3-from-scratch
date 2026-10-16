@@ -17,8 +17,14 @@ NOTEBOOKS = sorted(
 )
 
 
+# Notebooks that need optional extras (the hf extra provides safetensors/tokenizers).
+REQUIRES = {"07_pretrained_qwen3.ipynb": ["safetensors", "tokenizers"]}
+
+
 @pytest.mark.parametrize("name", NOTEBOOKS)
 def test_notebook_code_cells_run(repo_root, name, monkeypatch) -> None:
+    for module in REQUIRES.get(name, []):
+        pytest.importorskip(module, reason=f"{name} needs {module} (hf extra)")
     monkeypatch.setenv("MPLBACKEND", "Agg")  # plots render off-screen if matplotlib exists
     nb = json.loads((repo_root / "notebooks" / name).read_text(encoding="utf-8"))
     cells = [c for c in nb["cells"] if c["cell_type"] == "code"]

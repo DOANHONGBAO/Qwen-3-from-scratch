@@ -43,17 +43,24 @@ values, determinism, invalid input), "common mistakes" notes.
 **Acceptance:** all modules tested on CPU; full tiny-model forward is
 deterministic; parameter count matches the analytic count; CI green.
 
-## M2 — Validation against the official checkpoint
+## M2 — Official checkpoint, tokenizer, KV cache **(M2.1 done; M2.2 in progress)**
 
-- [ ] HF → native weight-name mapping with a completeness test (no missing/unexpected keys)
-- [ ] Parity with a randomly initialised tiny `transformers` Qwen3 (no download): every intermediate tensor
-- [ ] Download Qwen3-0.6B-Base (explicit step, outside Git), compare logits (fp32 and bf16, documented tolerances)
-- [ ] Tokenizer (official `tokenizer.json`), round-trip and ID parity with HF
-- [ ] KV cache: cached vs. uncached logits identical within tolerance
-- [ ] Greedy generation: identical token IDs to HF for fixed prompts
+### M2.1 — Official Qwen3 pretrained weights
+- [x] Hardware audit on the real machine; memory model; local vs Kaggle decision (`docs/hardware_assessment.md`)
+- [x] HF → native weight-name mapping generated from the config, strict, with a completeness test (no missing/unexpected keys, every parameter written once)
+- [x] Parity with randomly initialised tiny `transformers` checkpoints written by `save_pretrained` (no download)
+- [x] Download Qwen3-0.6B-Base at a pinned revision (explicit step, HF cache, outside Git)
+- [x] Compare embeddings, all 28 layers, final norm, logits with HF in fp32 **and** bf16 — bit-identical
+- [x] Tokenizer adapter on the official files; round trips; ID parity with HF (incl. config-only added tokens)
+- [x] Greedy generation: identical token IDs to HF for 5 fixed prompts
+- [x] Notebook 07, `scripts/run_pretrained_qwen3.py`, `scripts/verify_pretrained.py`
 
-**Acceptance:** logits within tolerance and identical greedy token IDs for a
-fixed prompt set, executed and recorded in `docs/progress.md`.
+### M2.2 — KV cache and generation
+- [ ] Caller-owned per-layer KV cache, cached vs uncached equality, sampling, benchmark (next commit)
+
+**Acceptance (M2.1 part met 2026-10-16):** logits within tolerance (observed: exactly
+equal) and identical greedy token IDs for a fixed prompt set, executed on the real
+checkpoint and recorded in `docs/progress.md`.
 
 ## M3 — C++20 CPU implementation
 

@@ -49,3 +49,16 @@ def repo_root() -> Path:
 @pytest.fixture(scope="session")
 def weights_dir() -> Path:
     return Path(os.environ["QWEN3_WEIGHTS_DIR"])
+
+
+# ------------------------------------------------------------------ toy tokenizer
+@pytest.fixture(scope="session")
+def toy_tokenizer_dir(tmp_path_factory) -> Path:
+    """A small byte-level BPE tokenizer with Qwen-like settings (NFC, no BOS, eos=pad).
+
+    Used to test the adapter in CI without downloading the real 151k-token tokenizer.
+    """
+    pytest.importorskip("tokenizers", reason="tokenizers not installed (hf extra)")
+    from qwen3_scratch.synthetic import build_toy_tokenizer
+
+    return build_toy_tokenizer(tmp_path_factory.mktemp("toy_tokenizer"))

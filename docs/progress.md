@@ -3,6 +3,56 @@
 Results are reported as **PASSED / FAILED / SKIPPED / NOT RUN**, exactly as
 observed. Nothing is listed as passed unless it was executed. Newest first.
 
+## 2026-10-16 — M2.1: official Qwen3-0.6B-Base weights, tokenizer, HF parity
+
+### What was done
+- `src/qwen3_scratch/weight_loader.py` (config-derived name map and shapes,
+  `SafetensorsCheckpoint`, strict `load_into_model`, `LoadReport`),
+  `src/qwen3_scratch/pretrained.py` (pinned revision, `download_checkpoint`,
+  `load_pretrained` via meta + `to_empty`), `src/qwen3_scratch/tokenizer.py`
+  (`Qwen3Tokenizer`), `sysinfo.py`, `synthetic.py`.
+- `Qwen3Config.from_hf_config` accepts the transformers 5 `rope_parameters` format.
+- Scripts: `hardware_report.py`, `verify_pretrained.py`, `run_pretrained_qwen3.py`,
+  `make_synthetic_checkpoint.py`. Notebook 07. Docs: `components/pretrained.md`,
+  `hardware_assessment.md`, decisions D-032–D-037, discrepancies X14/X15.
+- Fixture `checkpoint_name_map.json` for the C++ loader.
+- **Found on the real files:** `tokenizer.json` has 22 added tokens but
+  `tokenizer_config.json` declares 26; four (`<tool_response>`, `</tool_response>`,
+  `<think>`, `</think>`, ids 151665–151668) exist only in the config. The first
+  weights-tier run FAILED on this (vocabulary 151,665 instead of 151,669); the adapter
+  now registers them like transformers and checks their ids (D-034); rerun PASSED.
+- Tests: `tests/test_weight_loader.py` (19), `tests/test_tokenizer.py` (26),
+  `tests/parity/test_pretrained_hf.py` (loader part), `tests/test_pretrained_weights.py`
+  (weights tier, 11), `tests/test_config.py` (+5).
+
+### Where validation ran
+- **Maintainer's Fedora 44 laptop** (Ryzen 3 3250U, 5.66 GiB RAM, CPU only; Python
+  3.11.17, torch 2.14.1+cpu, transformers 5.20.0, safetensors 0.8.0, tokenizers 0.23.3,
+  huggingface_hub 2.2.0): everything that needs the real checkpoint. Raw results in
+  `results/m2/`. The runs used the final M2 scripts (next commit), whose parity report
+  additionally contains the KV-cache checks described under M2.2.
+- **Assistant sandbox** (Xeon 2 vCPU, 7.8 GiB, Python 3.13, torch 2.14.1+cu130 on CPU,
+  transformers 5.20.1): unit/parity tests and a rehearsal with a random-weight checkpoint
+  of the exact 0.6B shapes. huggingface.co is not reachable from the sandbox.
+
+### Validation
+| Check | Result |
+|---|---|
+| Checkpoint `Qwen/Qwen3-0.6B-Base` @ `da87bfb608c14b7cf20ba1ce41287e8de496c0cd`, `model.safetensors` sha256 `cd2a5120…9223eba` | downloaded (165 s), recorded in `results/m2/checkpoint.json` |
+| Mapping: 310/310 tensors, 0 missing / 0 unexpected / 0 shape errors, 596,049,920 params = HF, no `lm_head.weight` in the file, head tied | PASSED |
+| `pytest -m "weights and not slow"` (real files) | first run FAILED (tokenizer, see above) → after fix PASSED (11 passed) |
+| Parity fp32: embeddings, 28 layers, final norm, logits, 5 prompts | PASSED — max \|Δ\| = 0 for every tensor (bit-identical) |
+| Parity bf16 | PASSED — max \|Δ\| = 0 |
+| Top-1 / top-5 agreement, all positions | 1.000 / 1.000 (smallest HF top-2 margin 0.0625) |
+| Tokenizer ids vs `AutoTokenizer`, 5 prompts | identical |
+| Greedy ids (16 tokens) vs `transformers.generate`, 5 prompts | identical (fp32 and bf16) |
+| Real text completion with our model (`run_pretrained_qwen3.py`) | RUN — e.g. "Hà Nội là thủ đô của Việt Nam, là một trong những thành phố…" |
+| Peak RSS fp32: ours 3.60 GiB, HF 3.52 GiB (separate processes) | measured |
+| Free-RAM guard | refused fp32 3× at 2.98–3.07 GiB available; fp32 run started with `--force` at 3.55 GiB (estimate 2.97 GiB) |
+| CPU test suite at this commit (sandbox, with transformers) | PASSED — 649 passed, 13 skipped |
+| Ruff lint / format; fixtures `--check` | PASSED |
+| Notebook 07 executed (synthetic mode) | PASSED |
+
 ## 2026-10-16 — M1.6: Tiny Qwen3 causal language model (full forward pass)
 
 ### What was done

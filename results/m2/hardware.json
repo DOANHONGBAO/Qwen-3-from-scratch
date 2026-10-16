@@ -1,0 +1,77 @@
+{
+  "platform": "Linux-7.2.8-200.fc44.x86_64-x86_64-with-glibc2.43",
+  "hostname_hidden": true,
+  "cpu": {
+    "model": "AMD Ryzen 3 3250U with Radeon Graphics",
+    "logical_cpus": 4,
+    "flags": {
+      "avx": true,
+      "avx2": true,
+      "fma": true,
+      "f16c": true,
+      "avx512f": false,
+      "avx512_bf16": false,
+      "amx_bf16": false,
+      "avx_vnni": false
+    }
+  },
+  "mem_total_gib": 5.66,
+  "mem_available_gib": 2.94,
+  "swap_total_gib": 5.66,
+  "swap_free_gib": 4.82,
+  "cgroup_limit_gib": null,
+  "versions": {
+    "python": "3.11.17",
+    "torch": "2.14.1+cpu",
+    "transformers": "5.20.0",
+    "safetensors": "0.8.0",
+    "tokenizers": "0.23.3",
+    "huggingface_hub": "2.2.0",
+    "numpy": "2.4.6"
+  },
+  "torch_threads": 2,
+  "torch_interop_threads": 4,
+  "cuda_available": false,
+  "disk_free_gib_home": 207.3,
+  "hf_cache_gib": 0.0,
+  "estimates": {
+    "num_parameters": 596049920,
+    "bfloat16": {
+      "weights_gib": 1.11,
+      "load_peak_gib": 1.85,
+      "logits_per_1k_tokens_gib": 0.58,
+      "two_models_gib": 2.96,
+      "kv_cache_mib": {
+        "128": 14.0,
+        "512": 56.0,
+        "2048": 224.0,
+        "8192": 896.0,
+        "32768": 3584.0
+      }
+    },
+    "float32": {
+      "weights_gib": 2.22,
+      "load_peak_gib": 3.25,
+      "logits_per_1k_tokens_gib": 0.58,
+      "two_models_gib": 5.471,
+      "kv_cache_mib": {
+        "128": 28.0,
+        "512": 112.0,
+        "2048": 448.0,
+        "8192": 1792.0,
+        "32768": 7168.0
+      }
+    }
+  },
+  "plan": {
+    "usable_gib": 2.5,
+    "float32": {
+      "one_model_fits": false,
+      "two_models_fit": false
+    },
+    "bfloat16": {
+      "one_model_fits": true,
+      "two_models_fit": false
+    }
+  }
+}

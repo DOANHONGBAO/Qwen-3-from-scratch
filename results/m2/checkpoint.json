@@ -1,0 +1,15 @@
+{
+  "dir_name": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
+  "revision": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
+  "files": {
+    "LICENSE": 11343,
+    "config.json": 727,
+    "generation_config.json": 138,
+    "merges.txt": 1671853,
+    "model.safetensors": 1192135096,
+    "tokenizer.json": 7031645,
+    "tokenizer_config.json": 9678,
+    "vocab.json": 2776833
+  },
+  "model_safetensors_sha256": "cd2a512003e2f9f3cd3c32a9c3573f820bb28c940f73c57b1ddaa983d9223eba"
+}

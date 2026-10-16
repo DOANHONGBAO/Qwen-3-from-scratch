@@ -173,6 +173,22 @@ class Qwen3Config:
             raise NotImplementedError("Sliding-window attention is not supported")
         if hf.get("rope_scaling") is not None:
             raise NotImplementedError("RoPE scaling variants are not supported yet")
+        # transformers >= 5 writes RoPE settings as rope_parameters={"rope_theta", "rope_type"};
+        # the official Qwen3 checkpoints (transformers 4.51) use a top-level rope_theta.
+        rope_params = hf.get("rope_parameters") or {}
+        if rope_params.get("rope_type", "default") != "default":
+            raise NotImplementedError(f"RoPE type {rope_params['rope_type']!r} is not supported")
+        theta_top, theta_nested = hf.get("rope_theta"), rope_params.get("rope_theta")
+        if theta_top is None and theta_nested is None:
+            raise ValueError("config has neither rope_theta nor rope_parameters.rope_theta")
+        if theta_top is not None and theta_nested is not None and theta_top != theta_nested:
+            raise ValueError(f"rope_theta {theta_top} != rope_parameters.rope_theta {theta_nested}")
+        rope_theta = theta_top if theta_top is not None else theta_nested
+        layer_types = hf.get("layer_types")
+        if layer_types is not None and any(t != "full_attention" for t in layer_types):
+            raise NotImplementedError(
+                f"only full_attention layers are supported, got {layer_types}"
+            )
         head_dim = hf.get("head_dim") or hf["hidden_size"] // hf["num_attention_heads"]
         return cls(
             vocab_size=hf["vocab_size"],
@@ -183,7 +199,7 @@ class Qwen3Config:
             num_key_value_heads=hf["num_key_value_heads"],
             head_dim=head_dim,
             max_position_embeddings=hf["max_position_embeddings"],
-            rope_theta=float(hf["rope_theta"]),
+            rope_theta=float(rope_theta),
             rms_norm_eps=float(hf["rms_norm_eps"]),
             tie_word_embeddings=bool(hf.get("tie_word_embeddings", False)),
             attention_bias=bool(hf.get("attention_bias", False)),

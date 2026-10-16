@@ -205,3 +205,58 @@ checked on the `meta` device. **Accepted.**
 `max_position_embeddings`, and supports an optional EOS. It does not support
 padded batches or sampling. A byte-level toy tokenizer (V = 256) is used only in
 the demo and notebook; the real tokenizer and the KV cache are M2. **Accepted.**
+
+
+## D-032 · 2026-10-16 · Pinned official checkpoint, explicit download only
+M2 uses `Qwen/Qwen3-0.6B-Base` at revision `da87bfb608c14b7cf20ba1ce41287e8de496c0cd`
+(`QWEN3_0_6B_BASE_REVISION`), never the instruct model. `download_checkpoint()` is the
+only network call (`snapshot_download` with an allow-list: config, generation config,
+safetensors, tokenizer files, license) and is never called by tests. Files stay in the
+HF cache; `*.safetensors` is git-ignored. The weights tier uses `QWEN3_WEIGHTS_DIR`.
+**Accepted.**
+
+## D-033 · 2026-10-16 · Weight loader: config-derived name map, strict, no random weights
+The checkpoint → module map and every expected shape are generated from
+`Qwen3Config`, not taken from a `state_dict`. Names and shapes are checked before any
+write; missing tensors and shape mismatches always fail (also with `strict=False`,
+which only tolerates extra tensors); every parameter must be written exactly once.
+Only safetensors is accepted (no pickle). The model is built on `meta`, materialised
+with `to_empty`, RoPE buffers rebuilt and the head re-tied; tensors are copied one by
+one with `param.copy_` (dtype conversion without a temporary). A tied checkpoint may
+omit `lm_head.weight`; if present it must equal the embedding. **Accepted.**
+
+## D-034 · 2026-10-16 · Tokenizer adapter over `tokenizers`; config-only added tokens
+We do not re-implement byte-level BPE in M2: `Qwen3Tokenizer` loads `tokenizer.json`
+with the Rust `tokenizers` library and applies `tokenizer_config.json`. Discrepancy
+found on the real files: `tokenizer.json` contains 22 added tokens (151643–151664),
+`tokenizer_config.json` declares 26; `<tool_response>`, `</tool_response>`, `<think>`,
+`</think>` (151665–151668) exist only in the config. transformers registers them, so
+the adapter does too and checks that each receives its declared id (vocabulary
+151,669). No BOS; EOS = PAD = 151643; NFC normalisation. **Accepted.**
+
+## D-035 · 2026-10-16 · Pretrained parity methodology and tolerances
+`scripts/verify_pretrained.py` runs HF (reference) and our model in two separate
+processes on identical token ids, comparing embeddings, all 28 layer outputs, the
+final norm and the logits (forward hooks), top-1/top-5 agreement (near-ties listed
+with their margin), greedy ids against `transformers.generate`, and cached vs.
+uncached step logits. Tolerance: relative L2 ≤ 1e-5 in float32, ≤ 2e-2 in bf16, chosen
+from the expected rounding (identical operation order) and never relaxed to pass.
+A free-RAM guard refuses to start when one fp32 model would not fit with a 15 %
+margin (`--force` overrides it and is recorded in the run log). Result on the real
+checkpoint: bit-identical in fp32 and bf16 (see `docs/progress.md`). **Accepted.**
+
+## D-036 · 2026-10-16 · Accept transformers ≥ 5 config format
+`Qwen3Config.from_hf_config` accepts both the official top-level `rope_theta` and the
+transformers 5 `rope_parameters`/`layer_types` layout (as written by `save_pretrained`
+in transformers 5.20), and rejects non-default RoPE types and non-full-attention
+layers. Found by the new HF round-trip test. **Accepted.**
+
+## D-037 · 2026-10-16 · M2 execution plan: local CPU, sequential models, no Kaggle
+Measured: 5.66 GiB RAM (2.9–3.6 GiB available with the desktop running), 2-core
+Ryzen 3 3250U without bf16 instructions. One fp32 model (2.22 GiB weights, ~2.4–2.6 GiB
+anonymous memory in use) fits; two do not. Therefore HF and our model run in
+separate processes, fp32 is the reference dtype, bf16 is checked as well, threads = 2,
+and the uncached benchmark is limited to prompts ≤ 128 tokens. Everything ran locally
+on the maintainer's machine; the Kaggle fallback kernel is prepared but was not needed
+and was not submitted. Details: `docs/hardware_assessment.md`. **Accepted.**
+

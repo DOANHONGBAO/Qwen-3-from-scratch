@@ -1,0 +1,1557 @@
+{
+  "dtype": "float32",
+  "tolerance_rel_l2": 1e-05,
+  "load_seconds": 4.72566821199996,
+  "load_report": {
+    "ok": true,
+    "mapped": 310,
+    "missing": [],
+    "unexpected": [],
+    "shape_mismatch": {},
+    "dtype_conversions": {
+      "bfloat16->float32": 310
+    },
+    "tied": true,
+    "lm_head_in_checkpoint": false,
+    "num_parameters": 596049920,
+    "hf_num_parameters": 596049920
+  },
+  "prompts": [
+    {
+      "text": "Artificial intelligence is",
+      "tokenizer_ids_match": true,
+      "tensors": {
+        "embed": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.03019783892221598
+        },
+        "layer00": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.3173981059503731
+        },
+        "layer01": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.445913438872447
+        },
+        "layer02": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.92850445254425
+        },
+        "layer03": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.91845854537294
+        },
+        "layer04": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.91212790521686
+        },
+        "layer05": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.91207193084358
+        },
+        "layer06": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.88411611410108
+        },
+        "layer07": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.85743942235435
+        },
+        "layer08": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.79928061827502
+        },
+        "layer09": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.7142955520319
+        },
+        "layer10": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.69733186992781
+        },
+        "layer11": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.64792136354926
+        },
+        "layer12": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.61292176454162
+        },
+        "layer13": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.57855051674738
+        },
+        "layer14": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.51471616402421
+        },
+        "layer15": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.49788112793453
+        },
+        "layer16": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.48201236962299
+        },
+        "layer17": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.50458185188747
+        },
+        "layer18": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.58973430158048
+        },
+        "layer19": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.75863504189826
+        },
+        "layer20": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 107.89468347124205
+        },
+        "layer21": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 108.14076344876067
+        },
+        "layer22": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 108.36689244100546
+        },
+        "layer23": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 108.6391738256655
+        },
+        "layer24": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 108.92816288537203
+        },
+        "layer25": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 109.1680338724414
+        },
+        "layer26": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 104.2715226594388
+        },
+        "layer27": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 19.008906687951058
+        },
+        "norm": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 3.6654671499496327
+        },
+        "logits": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 4.036405901119185
+        }
+      },
+      "first_divergence": null,
+      "logits_agreement": {
+        "top1_agreement": 1.0,
+        "top5_overlap": 1.0,
+        "min_ref_top2_margin": 0.9444808959960938,
+        "disagreements": []
+      },
+      "next_token": {
+        "ours": 264,
+        "hf": 264,
+        "text": " a"
+      },
+      "generation": {
+        "ours_cached_ids": [
+          9286,
+          16488,
+          11229,
+          374,
+          264,
+          2070,
+          429,
+          702,
+          3884,
+          11048,
+          82687,
+          304,
+          3213,
+          1635,
+          11,
+          16227,
+          553,
+          279,
+          7703,
+          18048
+        ],
+        "hf_ids": [
+          9286,
+          16488,
+          11229,
+          374,
+          264,
+          2070,
+          429,
+          702,
+          3884,
+          11048,
+          82687,
+          304,
+          3213,
+          1635,
+          11,
+          16227,
+          553,
+          279,
+          7703,
+          18048
+        ],
+        "ids_equal_hf": true,
+        "first_mismatch": null,
+        "cached_vs_uncached_prefix_equal": true,
+        "cached_vs_uncached_max_logit_diff": 2.384185791015625e-05,
+        "text_ours": " a field that has seen rapid advancements in recent years, driven by the increasing availability",
+        "text_hf": " a field that has seen rapid advancements in recent years, driven by the increasing availability"
+      }
+    },
+    {
+      "text": "The capital of France is",
+      "tokenizer_ids_match": true,
+      "tensors": {
+        "embed": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.025771615881860003
+        },
+        "layer00": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.30834050385539286
+        },
+        "layer01": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.4398378377278829
+        },
+        "layer02": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.5507556550874
+        },
+        "layer03": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.54184246726545
+        },
+        "layer04": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.5359537512775
+        },
+        "layer05": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.53602404391849
+        },
+        "layer06": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.51115719225811
+        },
+        "layer07": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.48738685192197
+        },
+        "layer08": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.435512005075
+        },
+        "layer09": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.35980058475097
+        },
+        "layer10": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.34509475432205
+        },
+        "layer11": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.30087872229423
+        },
+        "layer12": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.27047342027397
+        },
+        "layer13": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.23971868154867
+        },
+        "layer14": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.18302847745994
+        },
+        "layer15": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.16854702112992
+        },
+        "layer16": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.15591811671983
+        },
+        "layer17": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.1787501036073
+        },
+        "layer18": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.25840349790704
+        },
+        "layer19": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.41203242105128
+        },
+        "layer20": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.54731105536094
+        },
+        "layer21": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.77222477590617
+        },
+        "layer22": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 90.97918722516988
+        },
+        "layer23": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 91.242887864615
+        },
+        "layer24": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 91.56367519614552
+        },
+        "layer25": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 91.91513007863382
+        },
+        "layer26": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 88.10967651175444
+        },
+        "layer27": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 17.406914726914415
+        },
+        "norm": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 4.011931030712998
+        },
+        "logits": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 4.130229683410189
+        }
+      },
+      "first_divergence": null,
+      "logits_agreement": {
+        "top1_agreement": 1.0,
+        "top5_overlap": 1.0,
+        "min_ref_top2_margin": 1.0149269104003906,
+        "disagreements": []
+      },
+      "next_token": {
+        "ours": 12095,
+        "hf": 12095,
+        "text": " Paris"
+      },
+      "generation": {
+        "ours_cached_ids": [
+          785,
+          6722,
+          315,
+          9625,
+          374,
+          12095,
+          13,
+          576,
+          6722,
+          315,
+          9856,
+          374,
+          19846,
+          13,
+          576,
+          6722,
+          315,
+          15344,
+          374,
+          21718,
+          13
+        ],
+        "hf_ids": [
+          785,
+          6722,
+          315,
+          9625,
+          374,
+          12095,
+          13,
+          576,
+          6722,
+          315,
+          9856,
+          374,
+          19846,
+          13,
+          576,
+          6722,
+          315,
+          15344,
+          374,
+          21718,
+          13
+        ],
+        "ids_equal_hf": true,
+        "first_mismatch": null,
+        "cached_vs_uncached_prefix_equal": true,
+        "cached_vs_uncached_max_logit_diff": 2.86102294921875e-05,
+        "text_ours": " Paris. The capital of Germany is Berlin. The capital of Italy is Rome.",
+        "text_hf": " Paris. The capital of Germany is Berlin. The capital of Italy is Rome."
+      }
+    },
+    {
+      "text": "Hà Nội là thủ đô của",
+      "tokenizer_ids_match": true,
+      "tensors": {
+        "embed": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.028312170088705128
+        },
+        "layer00": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.31544218980885413
+        },
+        "layer01": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.4526567546996871
+        },
+        "layer02": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 78.13841003858974
+        },
+        "layer03": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 78.13099348885966
+        },
+        "layer04": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 78.12603434115238
+        },
+        "layer05": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 78.12671727114989
+        },
+        "layer06": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 78.10607871960713
+        },
+        "layer07": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 78.08613991241823
+        },
+        "layer08": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 78.04260757394702
+        },
+        "layer09": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 77.97863122514651
+        },
+        "layer10": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 77.96723040489682
+        },
+        "layer11": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 77.93118909501335
+        },
+        "layer12": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 77.90571150492805
+        },
+        "layer13": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 77.87964160088889
+        },
+        "layer14": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 77.83246105316535
+        },
+        "layer15": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 77.820810375825
+        },
+        "layer16": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 77.81674061829041
+        },
+        "layer17": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 77.84151116097682
+        },
+        "layer18": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 77.92139612977294
+        },
+        "layer19": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 78.08245067550304
+        },
+        "layer20": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 78.22481802450203
+        },
+        "layer21": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 78.48433385478316
+        },
+        "layer22": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 78.79675854302697
+        },
+        "layer23": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 79.15207343669807
+        },
+        "layer24": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 79.59130333650386
+        },
+        "layer25": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 79.92758453384141
+        },
+        "layer26": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 76.6065700057584
+        },
+        "layer27": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 17.970236436707037
+        },
+        "norm": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 4.1234529532831585
+        },
+        "logits": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 4.706636824036096
+        }
+      },
+      "first_divergence": null,
+      "logits_agreement": {
+        "top1_agreement": 1.0,
+        "top5_overlap": 1.0,
+        "min_ref_top2_margin": 0.06249046325683594,
+        "disagreements": []
+      },
+      "next_token": {
+        "ours": 128324,
+        "hf": 128324,
+        "text": " Việt"
+      },
+      "generation": {
+        "ours_cached_ids": [
+          39,
+          6362,
+          128685,
+          37915,
+          128799,
+          130287,
+          59735,
+          128324,
+          29974,
+          11,
+          37915,
+          128249,
+          69086,
+          128253,
+          64061,
+          128974,
+          128465,
+          128281,
+          128314,
+          128449,
+          13,
+          350,
+          4076
+        ],
+        "hf_ids": [
+          39,
+          6362,
+          128685,
+          37915,
+          128799,
+          130287,
+          59735,
+          128324,
+          29974,
+          11,
+          37915,
+          128249,
+          69086,
+          128253,
+          64061,
+          128974,
+          128465,
+          128281,
+          128314,
+          128449,
+          13,
+          350,
+          4076
+        ],
+        "ids_equal_hf": true,
+        "first_mismatch": null,
+        "cached_vs_uncached_prefix_equal": true,
+        "cached_vs_uncached_max_logit_diff": 2.956390380859375e-05,
+        "text_ours": " Việt Nam, là một trong những thành phố lớn nhất thế giới. Tuy",
+        "text_hf": " Việt Nam, là một trong những thành phố lớn nhất thế giới. Tuy"
+      }
+    },
+    {
+      "text": "def fibonacci(n):\n    ",
+      "tokenizer_ids_match": true,
+      "tensors": {
+        "embed": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.027659254820216916
+        },
+        "layer00": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.30096932202774607
+        },
+        "layer01": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.620470682882285
+        },
+        "layer02": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.44437009643669
+        },
+        "layer03": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.43572709679277
+        },
+        "layer04": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.42965309871754
+        },
+        "layer05": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.42998117944269
+        },
+        "layer06": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.40523343276203
+        },
+        "layer07": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.38123446544
+        },
+        "layer08": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.32878906146257
+        },
+        "layer09": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.2543260122564
+        },
+        "layer10": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.23990882729554
+        },
+        "layer11": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.19593886031845
+        },
+        "layer12": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.16519297222068
+        },
+        "layer13": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.1347769525747
+        },
+        "layer14": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.07853184640354
+        },
+        "layer15": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.06482770169998
+        },
+        "layer16": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.05076966128925
+        },
+        "layer17": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.07218002532643
+        },
+        "layer18": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.15886885511887
+        },
+        "layer19": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.32377930306936
+        },
+        "layer20": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.4501910455368
+        },
+        "layer21": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.68309358238355
+        },
+        "layer22": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 84.89816954448133
+        },
+        "layer23": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 85.14556982195637
+        },
+        "layer24": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 85.49379652165233
+        },
+        "layer25": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 86.05941663546248
+        },
+        "layer26": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 82.23026917308364
+        },
+        "layer27": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 19.26994717958585
+        },
+        "norm": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 4.4152498555014015
+        },
+        "logits": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 4.007934372898455
+        }
+      },
+      "first_divergence": null,
+      "logits_agreement": {
+        "top1_agreement": 1.0,
+        "top5_overlap": 1.0,
+        "min_ref_top2_margin": 0.1498584747314453,
+        "disagreements": []
+      },
+      "next_token": {
+        "ours": 198,
+        "hf": 198,
+        "text": "\n"
+      },
+      "generation": {
+        "ours_cached_ids": [
+          750,
+          75698,
+          1445,
+          982,
+          257,
+          198,
+          262,
+          421,
+          308,
+          621,
+          220,
+          15,
+          510,
+          286,
+          470,
+          220,
+          15,
+          198,
+          262,
+          4409,
+          308
+        ],
+        "hf_ids": [
+          750,
+          75698,
+          1445,
+          982,
+          257,
+          198,
+          262,
+          421,
+          308,
+          621,
+          220,
+          15,
+          510,
+          286,
+          470,
+          220,
+          15,
+          198,
+          262,
+          4409,
+          308
+        ],
+        "ids_equal_hf": true,
+        "first_mismatch": null,
+        "cached_vs_uncached_prefix_equal": true,
+        "cached_vs_uncached_max_logit_diff": 2.47955322265625e-05,
+        "text_ours": "\n    if n == 0:\n        return 0\n    elif n",
+        "text_hf": "\n    if n == 0:\n        return 0\n    elif n"
+      }
+    },
+    {
+      "text": "1, 1, 2, 3, 5, 8, 13,",
+      "tokenizer_ids_match": true,
+      "tensors": {
+        "embed": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.026702054599348657
+        },
+        "layer00": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.2342609159602203
+        },
+        "layer01": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 0.34178683373595986
+        },
+        "layer02": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.05492989181596
+        },
+        "layer03": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.051490817395866
+        },
+        "layer04": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.04930255913175
+        },
+        "layer05": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.05040751351437
+        },
+        "layer06": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.03890567823659
+        },
+        "layer07": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.02882078540181
+        },
+        "layer08": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.00444084554013
+        },
+        "layer09": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 44.97072014963352
+        },
+        "layer10": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 44.96827402384031
+        },
+        "layer11": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 44.95083045352682
+        },
+        "layer12": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 44.9396940815775
+        },
+        "layer13": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 44.92795719249385
+        },
+        "layer14": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 44.8999236935005
+        },
+        "layer15": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 44.8977811798174
+        },
+        "layer16": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 44.906710751346196
+        },
+        "layer17": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 44.93587942554066
+        },
+        "layer18": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.021406210390545
+        },
+        "layer19": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.14807229389368
+        },
+        "layer20": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.321656376462656
+        },
+        "layer21": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.50421536572178
+        },
+        "layer22": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 45.73550983005455
+        },
+        "layer23": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 46.02992919480025
+        },
+        "layer24": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 46.638022209013904
+        },
+        "layer25": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 47.998915171912145
+        },
+        "layer26": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 46.747935452918306
+        },
+        "layer27": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 21.62486316841491
+        },
+        "norm": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 2.803006025907826
+        },
+        "logits": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms": 0.0,
+          "rel_l2": 0.0,
+          "ref_rms": 3.0335343380348587
+        }
+      },
+      "first_divergence": null,
+      "logits_agreement": {
+        "top1_agreement": 1.0,
+        "top5_overlap": 1.0,
+        "min_ref_top2_margin": 0.27642250061035156,
+        "disagreements": []
+      },
+      "next_token": {
+        "ours": 220,
+        "hf": 220,
+        "text": " "
+      },
+      "generation": {
+        "ours_cached_ids": [
+          16,
+          11,
+          220,
+          16,
+          11,
+          220,
+          17,
+          11,
+          220,
+          18,
+          11,
+          220,
+          20,
+          11,
+          220,
+          23,
+          11,
+          220,
+          16,
+          18,
+          11,
+          220,
+          17,
+          16,
+          11,
+          220,
+          18,
+          19,
+          11,
+          220,
+          20,
+          20,
+          11,
+          220,
+          23,
+          24,
+          11
+        ],
+        "hf_ids": [
+          16,
+          11,
+          220,
+          16,
+          11,
+          220,
+          17,
+          11,
+          220,
+          18,
+          11,
+          220,
+          20,
+          11,
+          220,
+          23,
+          11,
+          220,
+          16,
+          18,
+          11,
+          220,
+          17,
+          16,
+          11,
+          220,
+          18,
+          19,
+          11,
+          220,
+          20,
+          20,
+          11,
+          220,
+          23,
+          24,
+          11
+        ],
+        "ids_equal_hf": true,
+        "first_mismatch": null,
+        "cached_vs_uncached_prefix_equal": true,
+        "cached_vs_uncached_max_logit_diff": 2.4318695068359375e-05,
+        "text_ours": " 21, 34, 55, 89,",
+        "text_hf": " 21, 34, 55, 89,"
+      }
+    }
+  ],
+  "checks": {
+    "mapping_complete": true,
+    "tokenizer_ids_match": true,
+    "hidden_and_logits_within_tolerance": true,
+    "greedy_ids_equal_hf": true,
+    "cached_equals_uncached": true
+  },
+  "passed": true,
+  "memory": {
+    "rss_gib": 2.493,
+    "peak_rss_gib": 3.603,
+    "rss_anon_gib": 2.376,
+    "rss_file_gib": 0.118
+  },
+  "reference_memory": {
+    "rss_gib": 2.718,
+    "peak_rss_gib": 3.517,
+    "rss_anon_gib": 2.622,
+    "rss_file_gib": 0.095
+  },
+  "system": {
+    "platform": "Linux-7.2.8-200.fc44.x86_64-x86_64-with-glibc2.43",
+    "hostname_hidden": true,
+    "cpu": {
+      "model": "AMD Ryzen 3 3250U with Radeon Graphics",
+      "logical_cpus": 4,
+      "flags": {
+        "avx": true,
+        "avx2": true,
+        "fma": true,
+        "f16c": true,
+        "avx512f": false,
+        "avx512_bf16": false,
+        "amx_bf16": false,
+        "avx_vnni": false
+      }
+    },
+    "mem_total_gib": 5.66,
+    "mem_available_gib": 1.46,
+    "swap_total_gib": 5.66,
+    "swap_free_gib": 4.48,
+    "cgroup_limit_gib": null,
+    "versions": {
+      "python": "3.11.17",
+      "torch": "2.14.1+cpu",
+      "transformers": "5.20.0",
+      "safetensors": "0.8.0",
+      "tokenizers": "0.23.3",
+      "huggingface_hub": "2.2.0",
+      "numpy": "2.4.6"
+    },
+    "torch_threads": 2,
+    "torch_interop_threads": 4,
+    "cuda_available": false
+  },
+  "revision_expected": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
+  "threads": 2
+}

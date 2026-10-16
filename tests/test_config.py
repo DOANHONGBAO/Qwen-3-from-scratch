@@ -141,3 +141,29 @@ def test_unsupported_hf_features_raise(hf_config, key, value, exc) -> None:
 def test_raschka_key_map_covers_architecture_fields() -> None:
     field_names = {f.name for f in dataclasses.fields(Qwen3Config)}
     assert set(RASCHKA_KEY_MAP) <= field_names
+
+
+def test_transformers_v5_rope_parameters_are_accepted(hf_config) -> None:
+    """transformers >= 5 saves rope_parameters instead of a top-level rope_theta."""
+    v5 = {k: v for k, v in hf_config.items() if k != "rope_theta"}
+    v5["rope_parameters"] = {"rope_theta": 1_000_000.0, "rope_type": "default"}
+    v5["layer_types"] = ["full_attention"] * 28
+    assert Qwen3Config.from_hf_config(v5, dtype="bfloat16") == QWEN3_0_6B_BASE
+
+
+@pytest.mark.parametrize(
+    ("patch", "exc"),
+    [
+        ({"rope_parameters": {"rope_theta": 1e6, "rope_type": "yarn"}}, NotImplementedError),
+        ({"rope_parameters": {"rope_theta": 5.0, "rope_type": "default"}}, ValueError),
+        ({"layer_types": ["sliding_attention"] * 28}, NotImplementedError),
+    ],
+)
+def test_bad_rope_parameters_and_layer_types(hf_config, patch, exc) -> None:
+    with pytest.raises(exc):
+        Qwen3Config.from_hf_config({**hf_config, **patch})
+
+
+def test_missing_rope_theta(hf_config) -> None:
+    with pytest.raises(ValueError, match="rope_theta"):
+        Qwen3Config.from_hf_config({k: v for k, v in hf_config.items() if k != "rope_theta"})
