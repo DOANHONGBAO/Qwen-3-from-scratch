@@ -12,7 +12,8 @@ explained mathematically, and unit-tested. Hugging Face `transformers` is used o
 as a *reference* to verify numbers, never as the implementation.
 
 > **Status: M1 in progress.** Implemented and verified bit-identical to the
-> Hugging Face Qwen3 modules: RMSNorm (M1.1), SwiGLU (M1.2) and RoPE (M1.3). See
+> Hugging Face Qwen3 modules: RMSNorm (M1.1), SwiGLU (M1.2), RoPE (M1.3) and
+> QK-Norm + grouped-query attention (M1.4). See
 > [docs/roadmap.md](docs/roadmap.md).
 
 ## Target model
@@ -92,7 +93,7 @@ docs/                roadmap, architecture, environment, references, decisions, 
 
 - [Roadmap](docs/roadmap.md) — milestones, checklists, acceptance criteria
 - [Architecture](docs/architecture.md) — Qwen3 math, shapes, module map, test conventions
-- Components: [RMSNorm](docs/components/rmsnorm.md) · [SwiGLU](docs/components/swiglu.md) · [RoPE](docs/components/rope.md)
+- Components: [RMSNorm](docs/components/rmsnorm.md) · [SwiGLU](docs/components/swiglu.md) · [RoPE](docs/components/rope.md) · [QK-Norm](docs/components/qk_norm.md) · [Attention](docs/components/attention.md)
 - [Environment](docs/environment.md) — reproducible setup
 - [References](docs/references.md) — sources, licenses, reference discrepancies
 - [Decisions](docs/decisions.md) — technical decision log

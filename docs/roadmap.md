@@ -33,9 +33,9 @@ values, determinism, invalid input), "common mistakes" notes.
 - [x] M1.1 RMSNorm — `layers/rmsnorm.py`, 101 unit tests + 13 HF parity tests, gradcheck, notebook `01_rmsnorm.ipynb`, doc `docs/components/rmsnorm.md` (bit-identical to HF `Qwen3RMSNorm` in fp32/bf16/fp16)
 - [x] M1.2 SwiGLU FeedForward — `layers/swiglu.py`, unit + HF parity tests (bit-identical to `Qwen3MLP` fwd/bwd in fp32/bf16), gradcheck, notebook `02_swiglu.ipynb`, doc `docs/components/swiglu.md`, C++ fixture `tests/fixtures/swiglu_small.json`
 - [x] M1.3 RoPE — `layers/rope.py` (split-half/`rotate_half`, explicit `position_ids`, offsets, optional table cache), unit + HF parity tests (bit-identical tables and rotations in fp32/bf16), relative-position and KV-decoding checks, notebook `03_rope.ipynb`, doc `docs/components/rope.md`, C++ fixture `tests/fixtures/rope_small.json`
-- [ ] M1.4 QK-Norm + grouped-query attention with causal masking (renumbered 2026-10-16, see D-022)
+- [x] M1.4 QK-Norm + grouped-query attention with causal masking (renumbered 2026-10-16, see D-022)
   - [x] QK-Norm — `layers/qk_norm.py` (reuses RMSNorm), unit + HF parity tests (bit-identical), doc `docs/components/qk_norm.md`
-  - [ ] GQA attention (projections, QK-Norm, RoPE, KV grouping, causal mask, softmax, `o_proj`)
+  - [x] GQA attention — `layers/attention.py` (projections, QK-Norm, RoPE, contiguous KV grouping, position-based causal mask, float32 softmax, `o_proj`); every intermediate and all gradients bit-identical to HF eager `Qwen3Attention` for MHA/GQA/MQA; leakage, float64 loop and SDPA references; notebook `04_qk_norm_gqa.ipynb`; doc `docs/components/attention.md`; fixture `tests/fixtures/attention_small.json`
 - [ ] M1.5 Decoder block (pre-norm residuals)
 - [ ] M1.6 Qwen3 model (tied embeddings, parameter count == `estimate_num_parameters`)
 - [ ] M1.7 Notebook walkthrough of the tiny model

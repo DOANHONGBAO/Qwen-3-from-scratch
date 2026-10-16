@@ -31,8 +31,9 @@ k = x Wk -> (B, T, H_kv, d_h) -> RMSNorm over d_h (k_norm) -> (B, H_kv, T, d_h) 
 v = x Wv -> (B, T, H_kv, d_h)                               -> (B, H_kv, T, d_h)
 [KV cache: append k, v along the sequence axis -> (B, H_kv, S, d_h)]
 repeat k, v g times along the head axis       -> (B, H, S, d_h)
-scores = q kᵀ / sqrt(d_h) + causal mask       -> (B, H, T, S)
-out    = softmax(scores) v                    -> (B, H, T, d_h) -> (B, T, H·d_h) -> Wo -> (B, T, d)
+scores = q kᵀ · d_h^(-1/2), −∞ where masked  -> (B, H, T, S)   (mask BEFORE softmax)
+out    = softmax_fp32(scores) v               -> (B, H, T, d_h) -> (B, T, H·d_h) -> Wo -> (B, T, d)
+(query head h reads kv head h // g; QK-Norm before RoPE; v is neither normed nor rotated)
 ```
 
 ## 2. Components (planned)
@@ -43,8 +44,8 @@ out    = softmax(scores) v                    -> (B, H, T, d_h) -> (B, T, H·d_h
 | 2 | SwiGLU FeedForward | `down( silu(gate(x)) ⊙ up(x) )`, no biases — [details](components/swiglu.md) | `(B,T,d) → (B,T,d)` via `d_ff` | M1.2 **done** |
 | 3 | RoPE | rotate pairs `(x_i, x_{i+d_h/2})` by `p·θ^{-2i/d_h}` ("rotate_half" layout) — [details](components/rope.md) | `(B,H,T,d_h) → same` | M1.3 **done** |
 | 4 | QK-Norm | RMSNorm over `d_h` of each Q and K head, **before** RoPE — [details](components/qk_norm.md) | `(B,N,T,d_h) → same` | M1.4 **done** |
-| 5 | Causal mask | position `i` may attend to keys `j ≤ past + i` | `(T, S)` bool | M1.4 |
-| 6 | Grouped Query Attention | see §1; `H_kv` KV heads shared by `g` query heads | `(B,T,d) → (B,T,d)` | M1.4 |
+| 5 | Causal mask | `causal_mask(q_pos, k_pos)`: key position ≤ query position, applied before softmax | `(T, S)` bool | M1.4 **done** |
+| 6 | Grouped Query Attention | see §1; query head `h` reads KV head `h // g` — [details](components/attention.md) | `(B,T,d) → (B,T,d)` | M1.4 **done** |
 | 7 | Decoder block | two pre-norm residual sublayers | `(B,T,d) → (B,T,d)` | M1.5 |
 | 8 | Qwen3 model | embedding → N blocks → norm → tied LM head | `(B,T) → (B,T,V)` | M1.6 |
 | 9 | Tokenizer | byte-level BPE from official `tokenizer.json` + special tokens | `str ↔ list[int]` | M2 |
@@ -77,7 +78,7 @@ can be written module-by-module.
 | `layers/swiglu.py` — `SwiGLUFeedForward`, `swiglu_textbook`, `silu_textbook` | `include/qwen3/swiglu.hpp` (requirements: [swiglu.md §10](components/swiglu.md#10-requirements-for-the-c20-port-m3)) | **M1.2: done** / M3 |
 | `layers/rope.py` — `RotaryEmbedding`, `apply_rope`, `apply_rope_to_qk`, `rope_cos_sin`, `compute_inv_freq`, `make_position_ids` | `include/qwen3/rope.hpp` (requirements: [rope.md §12](components/rope.md#12-requirements-for-the-c20-port-m3)) | **M1.3: done** / M3 |
 | `layers/qk_norm.py` — `QKNorm`, `apply_qk_norm` | part of `include/qwen3/attention.hpp` | **M1.4: done** / M3 |
-| `layers/attention.py` (mask, GQA) | `include/qwen3/attention.hpp` | M1.4 / M3 |
+| `layers/attention.py` — `GroupedQueryAttention`, `repeat_kv`, `query_to_kv_head`, `causal_mask`, `attention_softmax` | `include/qwen3/attention.hpp` (requirements: [attention.md §9](components/attention.md#9-requirements-for-the-c20-port-m3)) | **M1.4: done** / M3 |
 | `layers/block.py` | `include/qwen3/block.hpp` | M1.5 / M3 |
 | `model.py` | `include/qwen3/model.hpp` | M1.6 / M3 |
 | `weights.py` (HF → native name mapping) | `include/qwen3/weights.hpp` | M2 / M3 |

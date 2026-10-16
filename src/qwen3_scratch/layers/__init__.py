@@ -6,8 +6,18 @@ Implemented so far (see docs/roadmap.md):
 * :mod:`qwen3_scratch.layers.swiglu` - SwiGLU feed-forward (M1.2)
 * :mod:`qwen3_scratch.layers.rope` - rotary position embedding (M1.3)
 * :mod:`qwen3_scratch.layers.qk_norm` - query/key normalisation (M1.4)
+* :mod:`qwen3_scratch.layers.attention` - grouped-query causal self-attention (M1.4)
 """
 
+from qwen3_scratch.layers.attention import (
+    AttentionTrace,
+    GroupedQueryAttention,
+    attention_softmax,
+    bool_to_additive_mask,
+    causal_mask,
+    query_to_kv_head,
+    repeat_kv,
+)
 from qwen3_scratch.layers.qk_norm import QKNorm, apply_qk_norm
 from qwen3_scratch.layers.rmsnorm import RMSNorm, rms_norm, rms_norm_textbook
 from qwen3_scratch.layers.rope import (
@@ -22,6 +32,13 @@ from qwen3_scratch.layers.rope import (
 from qwen3_scratch.layers.swiglu import SwiGLUFeedForward, silu_textbook, swiglu_textbook
 
 __all__ = [
+    "AttentionTrace",
+    "GroupedQueryAttention",
+    "attention_softmax",
+    "bool_to_additive_mask",
+    "causal_mask",
+    "query_to_kv_head",
+    "repeat_kv",
     "QKNorm",
     "RMSNorm",
     "RotaryEmbedding",

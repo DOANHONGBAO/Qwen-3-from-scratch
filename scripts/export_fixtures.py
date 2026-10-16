@@ -23,6 +23,7 @@ from typing import Any
 import torch
 
 from qwen3_scratch.layers import (
+    GroupedQueryAttention,
     RotaryEmbedding,
     SwiGLUFeedForward,
     apply_rope_to_qk,
@@ -89,7 +90,51 @@ def rope_fixture() -> dict[str, Any]:
     }
 
 
+def attention_fixture() -> dict[str, Any]:
+    """GQA self-attention: H=8, Nq=4, Nkv=2, D=4, T=3, positions 2..4, causal, float32."""
+    seed, h, nq, nkv, d, theta = 2024, 8, 4, 2, 4, 10_000.0
+    gen = torch.Generator().manual_seed(seed)
+    attn = GroupedQueryAttention(h, nq, nkv, d)
+    with torch.no_grad():
+        for name, p in attn.named_parameters():
+            base = 1.0 if "norm" in name else 0.0
+            p.copy_(base + 0.5 * torch.randn(p.shape, generator=gen))
+        x = torch.randn(1, 3, h, generator=gen)
+        pos = make_position_ids(3, offset=2)
+        cos, sin = RotaryEmbedding(d, theta)(pos)
+        y, tr = attn(x, cos, sin, return_trace=True)
+    return {
+        "component": "attention",
+        "description": (
+            "Qwen3 GQA: q/k/v proj -> per-head q_norm/k_norm -> RoPE (split-half) -> "
+            "query head h uses kv head h // (Nq/Nkv) -> causal softmax(q k^T * D^-0.5) v "
+            "-> o_proj. probs/context/output are expected values."
+        ),
+        "seed": seed,
+        "config": {
+            "hidden_size": h,
+            "num_attention_heads": nq,
+            "num_key_value_heads": nkv,
+            "head_dim": d,
+            "rope_theta": theta,
+            "rms_norm_eps": 1e-6,
+            "position_ids": pos.tolist(),
+        },
+        "tolerance": {"rtol": 1e-5, "atol": 1e-6},
+        "inputs": {"x": _tensor(x)},
+        "parameters": {name: _tensor(p) for name, p in attn.named_parameters()},
+        "outputs": {
+            "q_rope": _tensor(tr.q_rope),
+            "k_rope": _tensor(tr.k_rope),
+            "probs": _tensor(tr.probs),
+            "context": _tensor(tr.context),
+            "output": _tensor(y),
+        },
+    }
+
+
 FIXTURES: dict[str, Callable[[], dict[str, Any]]] = {
+    "attention_small.json": attention_fixture,
     "rope_small.json": rope_fixture,
     "swiglu_small.json": swiglu_fixture,
 }

@@ -3,6 +3,61 @@
 Results are reported as **PASSED / FAILED / SKIPPED / NOT RUN**, exactly as
 observed. Nothing is listed as passed unless it was executed. Newest first.
 
+## 2026-10-16 — M1.4 (part B): grouped-query attention
+
+### What was done
+- `src/qwen3_scratch/layers/attention.py`: `GroupedQueryAttention` (q/k/v/o
+  projections, `q_norm`/`k_norm` via `apply_qk_norm`, RoPE via `apply_rope_to_qk`,
+  contiguous KV grouping, scaled scores, position-based causal mask before a
+  float32 softmax, `o_proj`, optional `AttentionTrace`), plus `repeat_kv`,
+  `query_to_kv_head`, `causal_mask`, `bool_to_additive_mask`, `attention_softmax`.
+- Tests: `tests/test_attention.py` (59), `tests/parity/test_attention_hf.py` (13),
+  attention fixture in `tests/test_fixtures.py`, notebook 04 in `tests/test_notebooks.py`.
+- `notebooks/04_qk_norm_gqa.ipynb`, `docs/components/attention.md`,
+  `scripts/attention_report.py`, `tests/fixtures/attention_small.json`.
+  Decisions D-005 (accepted), D-023 to D-025; discrepancies X7/X8 updated.
+- **Bug found and fixed during development** (never committed): a float32-only softmax
+  disagreed with the float64 loop reference at ~7e-8. Fixed with
+  `promote_types(dtype, float32)` (D-023); covered by the float64 loop tests and `gradcheck`.
+- No changes were needed to RMSNorm or RoPE.
+
+### Validation (assistant sandbox: Python 3.11.17, torch 2.14.1 on CPU, transformers 5.20.0)
+
+| Check | Result |
+|---|---|
+| `python scripts/check_env.py` | PASSED |
+| `python -m ruff check .` / `python -m ruff format --check .` | PASSED / PASSED (53 files) |
+| `python -m pytest` (with transformers + matplotlib) | PASSED: 452 passed, 2 skipped |
+| `python -m pytest` (transformers and matplotlib simulated missing) | PASSED: 396 passed, 7 skipped |
+| `tests/test_attention.py` | PASSED: 59 passed (shapes, QK-Norm/RoPE placement, grouping, modulo-mapping counterexample, MHA/MQA/GQA vs float64 loop at 1e-12, vs `F.scaled_dot_product_attention(enable_gqa=True)`, cache sizes, invalid configs/inputs, causal zeros, prefix leakage, gradient leakage, padding/fully-masked rows, extreme scales, bf16, gradients, `gradcheck`, T = 1, batch independence, relative-position invariance, determinism) |
+| `tests/parity/test_attention_hf.py` | PASSED: 13 passed; projections, normed q/k, RoPE q/k, grouped k/v, probabilities, context and output **bit-identical** to HF eager `Qwen3Attention` (fp32 and bf16; GQA 4/2, MHA 4/4, MQA 4/1, 16/8); fp32 gradients for the input and all six parameters bit-identical; HF without a mask shown to be non-causal |
+| `notebooks/04_qk_norm_gqa.ipynb` executed with `nbclient` (11 code cells, 4 plots, 0 errors) | PASSED |
+| `tests/test_fixtures.py` | PASSED: 12 passed |
+| C++ build + CTest (unchanged) | PASSED |
+| Same on Fedora | NOT RUN by the assistant |
+
+`python scripts/attention_report.py` (0.6B attention sizes, `x: (1, 128, 1024)`, positions 1000–1127):
+
+| dtype | ours vs | tensor | max_abs | max_rel (÷ max abs ref) | mean_abs |
+|---|---|---|---|---|---|
+| float32 | float64 module | probs | 5.548e-06 | 5.548e-06 | 3.150e-08 |
+| float32 | float64 module | context | 1.184e-05 | 5.298e-06 | 5.385e-07 |
+| float32 | float64 module | output | 4.883e-06 | 2.096e-06 | 5.286e-07 |
+| float32 | float64 module | dL/dx | 1.323e-05 | 3.149e-06 | 1.066e-06 |
+| float32 | HF Qwen3Attention | probs / output / dL/dx | 0 | 0 | 0 |
+| bfloat16 | float64 module | probs | 6.021e-03 | 6.021e-03 | 4.557e-05 |
+| bfloat16 | float64 module | context | 1.389e-02 | 6.217e-03 | 9.146e-04 |
+| bfloat16 | float64 module | output | 1.135e-02 | 4.871e-03 | 9.016e-04 |
+| bfloat16 | float64 module | dL/dx | 2.043e-02 | 4.860e-03 | 1.648e-03 |
+| bfloat16 | HF Qwen3Attention | probs / output / dL/dx | 0 | 0 | 0 |
+
+### Open items
+- Run on Fedora (optionally with `.[hf]` for the parity tests) and push.
+- Pending from M0: confirm GitHub Actions is green.
+
+### Next
+M1.5 — Qwen3 decoder block (awaiting approval).
+
 ## 2026-10-16 — M1.4 (part A): QK-Norm
 
 ### What was done

@@ -26,7 +26,8 @@ stays configurable. (Discrepancy X1.) **Accepted.**
 ## D-005 · 2026-10-16 · Module/parameter names follow the HF checkpoint
 Using `q_proj`, `k_proj`, `gate_proj`, `input_layernorm`, ... makes weight loading
 a near-identity mapping and parity debugging easier. (Discrepancy X10.)
-**Proposed — confirm at M1.6/M2.**
+**Accepted** — RMSNorm, SwiGLU and attention state dicts load HF modules with
+`strict=True` (M1.1–M1.4).
 
 ## D-006 · 2026-10-16 · Tooling: setuptools + pip/conda, Ruff, pytest
 Conda for the interpreter (project requirement), pip for Python packages
@@ -135,3 +136,25 @@ The maintainer's task plan merges QK-Norm, causal masking and GQA into **M1.4**.
 The decoder block becomes M1.5, the model M1.6 and the walkthrough notebook
 M1.7. Earlier references to "M1.5 causal mask" / "M1.6 GQA" refer to M1.4.
 **Accepted.**
+
+## D-023 · 2026-10-16 · Attention numerics follow HF eager attention
+Scores are `matmul(q, kᵀ) * D**-0.5` (multiply, not divide). The causal mask is
+applied before a float32 softmax, and the result is cast back to the activation
+dtype. Grouping uses contiguous `repeat_kv`. This is bit-identical to HF
+`Qwen3Attention` (eager) in fp32/bf16 for every intermediate, and for fp32
+gradients. As with RMSNorm (D-014), float64 inputs keep a float64 softmax
+(`promote_types(dtype, float32)`); HF would downcast. This was found when the
+float64 loop reference disagreed at 1e-7. **Accepted.**
+
+## D-024 · 2026-10-16 · Boolean masks built from absolute positions
+The attention API takes a boolean "may attend" mask; `causal_mask(q_positions,
+k_positions)` derives it from absolute positions, so the same code is correct for
+non-square cached decoding (M2). The default is causal over the call's own tokens.
+Rows with no allowed key give zero probabilities (finite gradients) instead of NaN
+(HF: uniform). `bool_to_additive_mask` produces HF's additive form for parity tests.
+**Accepted.**
+
+## D-025 · 2026-10-16 · Materialise repeated KV heads in the educational version
+`repeat_kv` copies each KV head `g` times for readability and exact HF parity.
+The KV cache will store only `Nkv` heads, and the C++ port will index head `h // g`
+without copying (docs/components/attention.md §9). **Accepted for M1.**
