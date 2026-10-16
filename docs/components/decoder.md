@@ -104,3 +104,4 @@ Parameters (0.6B): `input_layernorm` 1,024 · `self_attn` 6,291,712 (incl. QK-No
 size `[N, H]` (normalised input, sublayer output) plus the attention and MLP
 workspaces suffice. Interface:
 `void decoder_layer(const LayerWeights&, std::span<float> x /*[N,H], in-place*/, const RopeTables&, const Mask&, Workspace&)`.
+Full-model graph and fixtures: [model.md](model.md).

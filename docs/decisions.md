@@ -47,7 +47,8 @@ softmax — discrepancies X5–X7), we follow HF so bf16 parity tests can be tig
 
 ## D-009 · 2026-10-16 · Real weight tying
 When `tie_word_embeddings` is true the LM head will share the embedding
-parameter (one tensor), not hold a copy. (Discrepancy X4.) **Proposed — M1.6 (was M1.8 before D-022).**
+parameter (one tensor), not hold a copy. (Discrepancy X4.) **Accepted and implemented in M1.6** (identity, storage and shared
+gradient tested; matches HF).
 
 ## D-010 · 2026-10-16 · License Apache-2.0
 Matches the licenses of R1, R6 and the Qwen3 weights, and keeps attribution
@@ -166,3 +167,41 @@ without copying (docs/components/attention.md §9). **Accepted for M1.**
 optional boolean mask instead of computing positions itself, so one RoPE table
 per model forward is shared by all layers (as HF passes `position_embeddings`).
 **Accepted.**
+
+## D-027 · 2026-10-16 · RoPE frequencies stay float32 under module dtype casts (bug fix)
+Found while testing the full model in bf16: `model.to(torch.bfloat16)` cast
+`RotaryEmbedding.inv_freq` to bf16, and `rope_cos_sin` then multiplied positions
+and frequencies in bf16 (positions > 256 not representable). Fix:
+`RotaryEmbedding._apply` keeps `inv_freq` (and cached tables) in float32 (float64
+allowed), and `rope_cos_sin` computes angles in `promote_types(inv_freq.dtype,
+float32)`. Regression tests fail on the old code and pass now. HF shows the same
+`.to(bf16)` rounding; HF models created directly in bf16 keep float32 frequencies,
+which is the behaviour we now always have. **Accepted.**
+
+## D-028 · 2026-10-16 · Model API: padding masks only, explicit positions, hard limits
+`Qwen3Model.forward(input_ids | inputs_embeds, attention_mask, position_ids)`.
+`attention_mask` is a `[B, T]` 0/1 padding mask combined with causality by token
+index; additive float masks are rejected. Pad ids are never masked implicitly.
+Default positions are `0..T-1`; positions or lengths ≥ `max_position_embeddings`
+raise. The RoPE tables are computed once per forward and shared by all layers.
+Outputs are small dataclasses (`Qwen3ModelOutput`, `CausalLMOutput`). **Accepted.**
+
+## D-029 · 2026-10-16 · Causal LM loss: HF label convention, explicit failure on no targets
+Labels have the same shape as `input_ids` and are shifted once inside
+`causal_lm_loss` (padded with −100 at the end, exactly like HF, so the reduction
+is bit-identical). The mean is over non-ignored targets in float32 (float64 for
+float64 logits). With zero valid targets we raise `NoValidTargetsError` instead
+of returning NaN. **Accepted.**
+
+## D-030 · 2026-10-16 · Two tiny configurations
+`configs/qwen3_tiny.json` (`QWEN3_TINY`, the maintainer's spec) is the
+educational Tiny LM. Its `head_dim` equals `H / N` (32 = 128 / 4), so the model
+and parity tests also run `TINY_QWEN3`, where they differ, plus an untied
+variant. Routine tests never instantiate the 0.6B model; its parameter count is
+checked on the `meta` device. **Accepted.**
+
+## D-031 · 2026-10-16 · Minimal greedy generation without KV cache
+`greedy_generate` re-runs the full prefix every step, refuses to exceed
+`max_position_embeddings`, and supports an optional EOS. It does not support
+padded batches or sampling. A byte-level toy tokenizer (V = 256) is used only in
+the demo and notebook; the real tokenizer and the KV cache are M2. **Accepted.**

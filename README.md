@@ -13,21 +13,25 @@ as a *reference* to verify numbers, never as the implementation.
 
 > **Status: M1 in progress.** Implemented and verified bit-identical to the
 > Hugging Face Qwen3 modules: RMSNorm (M1.1), SwiGLU (M1.2), RoPE (M1.3) and
-> QK-Norm + grouped-query attention (M1.4) and the decoder block (M1.5). See
-> [docs/roadmap.md](docs/roadmap.md).
+> QK-Norm + grouped-query attention (M1.4) and the decoder block (M1.5).
+> **M1.6:** a complete, configurable Tiny Qwen3 causal LM (embedding → decoder stack →
+> final norm → tied LM head, loss, greedy generation) whose logits, loss and gradients
+> are bit-identical to Hugging Face `Qwen3ForCausalLM` with the same weights.
+> Its weights are **random**: it is an architecture check, not a pretrained model.
+> Checkpoint loading, tokenizer and KV cache come in M2. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Target model
 
-| | Tiny Qwen3 (tests) | Qwen3-0.6B-Base (target checkpoint) |
-|---|---|---|
-| layers | 2 | 28 |
-| hidden size | 64 | 1024 |
-| attention heads / KV heads | 4 / 2 | 16 / 8 |
-| head_dim | 32 | 128 (≠ 1024/16) |
-| MLP intermediate size | 192 | 3072 |
-| vocab | 512 | 151,936 |
-| QK-Norm / tied embeddings | yes / yes | yes / yes |
-| parameters (analytic) | 156,096 | 596,049,920 (0.44B non-embedding) |
+| | Tiny Qwen3 LM (`configs/qwen3_tiny.json`) | component tests (`TINY_QWEN3`) | Qwen3-0.6B-Base (target checkpoint) |
+|---|---|---|---|
+| layers | 2 | 2 | 28 |
+| hidden size | 128 | 64 | 1024 |
+| attention heads / KV heads | 4 / 2 | 4 / 2 | 16 / 8 |
+| head_dim | 32 | 32 (≠ 64/4) | 128 (≠ 1024/16) |
+| MLP intermediate size | 384 | 192 | 3072 |
+| vocab | 256 | 512 | 151,936 |
+| QK-Norm / tied embeddings | yes / yes | yes / yes | yes / yes |
+| parameters | 426,752 | 156,096 | 596,049,920 (0.44B non-embedding) |
 
 All dimensions come from `Qwen3Config` (`src/qwen3_scratch/config.py`); nothing
 is hardcoded. Presets live in [`configs/`](configs/).
@@ -44,6 +48,26 @@ is hardcoded. Presets live in [`configs/`](configs/).
    benchmarks, with GPU runs on Kaggle when needed.
 
 The module map is documented in [docs/architecture.md](docs/architecture.md).
+
+## Try the Tiny Qwen3
+
+```bash
+python scripts/demo_tiny_qwen3.py        # shapes, parameter count, loss, greedy decoding (random weights)
+```
+
+```python
+import torch
+from qwen3_scratch.config import Qwen3Config
+from qwen3_scratch.model import Qwen3ForCausalLM
+from qwen3_scratch.generation import greedy_generate
+
+cfg = Qwen3Config.from_json("configs/qwen3_tiny.json")
+torch.manual_seed(0)
+model = Qwen3ForCausalLM(cfg)
+ids = torch.tensor([[72, 101, 108, 108, 111]])  # toy byte "tokens"
+out = model(ids, labels=ids)  # out.logits [1, 5, 256], out.loss ~ ln 256
+print(greedy_generate(model, ids, max_new_tokens=5))  # meaningless: untrained weights
+```
 
 ## Quick start (Fedora, CPU only)
 
@@ -93,7 +117,7 @@ docs/                roadmap, architecture, environment, references, decisions, 
 
 - [Roadmap](docs/roadmap.md) — milestones, checklists, acceptance criteria
 - [Architecture](docs/architecture.md) — Qwen3 math, shapes, module map, test conventions
-- Components: [RMSNorm](docs/components/rmsnorm.md) · [SwiGLU](docs/components/swiglu.md) · [RoPE](docs/components/rope.md) · [QK-Norm](docs/components/qk_norm.md) · [Attention](docs/components/attention.md) · [Decoder block](docs/components/decoder.md)
+- Components: [RMSNorm](docs/components/rmsnorm.md) · [SwiGLU](docs/components/swiglu.md) · [RoPE](docs/components/rope.md) · [QK-Norm](docs/components/qk_norm.md) · [Attention](docs/components/attention.md) · [Decoder block](docs/components/decoder.md) · [Full model](docs/components/model.md)
 - [Environment](docs/environment.md) — reproducible setup
 - [References](docs/references.md) — sources, licenses, reference discrepancies
 - [Decisions](docs/decisions.md) — technical decision log

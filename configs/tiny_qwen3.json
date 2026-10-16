@@ -12,5 +12,7 @@
   "tie_word_embeddings": true,
   "attention_bias": false,
   "qk_norm": true,
-  "dtype": "float32"
+  "dtype": "float32",
+  "attention_dropout": 0.0,
+  "initializer_range": 0.02
 }

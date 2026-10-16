@@ -64,6 +64,8 @@ class Qwen3Config:
     attention_bias: bool = False
     qk_norm: bool = True
     dtype: str = "float32"
+    attention_dropout: float = 0.0
+    initializer_range: float = 0.02
 
     def __post_init__(self) -> None:
         self.validate()
@@ -98,6 +100,13 @@ class Qwen3Config:
             raise ValueError(f"rms_norm_eps must be > 0, got {self.rms_norm_eps}")
         if self.dtype not in SUPPORTED_DTYPES:
             raise ValueError(f"dtype must be one of {SUPPORTED_DTYPES}, got {self.dtype!r}")
+        if not 0.0 <= self.attention_dropout < 1.0:
+            raise ValueError(f"attention_dropout must be in [0, 1), got {self.attention_dropout}")
+        if not self.initializer_range > 0:
+            raise ValueError(f"initializer_range must be > 0, got {self.initializer_range}")
+        for name in ("attention_bias", "qk_norm", "tie_word_embeddings"):
+            if not isinstance(getattr(self, name), bool):
+                raise ValueError(f"{name} must be a bool, got {getattr(self, name)!r}")
 
     # ------------------------------------------------------- derived quantities
     @property
@@ -180,6 +189,8 @@ class Qwen3Config:
             attention_bias=bool(hf.get("attention_bias", False)),
             qk_norm=True,  # Qwen3 always applies per-head RMSNorm to Q and K
             dtype=dtype,
+            attention_dropout=float(hf.get("attention_dropout", 0.0)),
+            initializer_range=float(hf.get("initializer_range", 0.02)),
         )
 
     @classmethod
@@ -212,7 +223,7 @@ QWEN3_0_6B_BASE = Qwen3Config(
     dtype="bfloat16",
 )
 
-# Tiny configuration for fast CPU unit tests. It deliberately keeps the
+# Tiny configuration for fast CPU unit tests of individual components. It deliberately keeps the
 # Qwen3-specific structure: GQA (4 query heads, 2 KV heads), head_dim
 # independent of hidden_size / num_heads (64 / 4 = 16 != 32), QK-Norm and tied
 # embeddings.
@@ -233,7 +244,31 @@ TINY_QWEN3 = Qwen3Config(
     dtype="float32",
 )
 
+# Tiny Qwen3 *language model* used by the M1.6 model tests, notebook and CLI demo
+# (configs/qwen3_tiny.json). Educational random-weight model, NOT a checkpoint.
+# Note: here head_dim == hidden_size / num_attention_heads (128 / 4 = 32); tests also
+# run the full model with TINY_QWEN3, where the two differ.
+QWEN3_TINY = Qwen3Config(
+    vocab_size=256,
+    hidden_size=128,
+    intermediate_size=384,
+    num_hidden_layers=2,
+    num_attention_heads=4,
+    num_key_value_heads=2,
+    head_dim=32,
+    max_position_embeddings=128,
+    rope_theta=1_000_000.0,
+    rms_norm_eps=1e-6,
+    tie_word_embeddings=True,
+    attention_bias=False,
+    qk_norm=True,
+    dtype="float32",
+    attention_dropout=0.0,
+    initializer_range=0.02,
+)
+
 PRESETS: dict[str, Qwen3Config] = {
     "qwen3-0.6b-base": QWEN3_0_6B_BASE,
+    "qwen3-tiny": QWEN3_TINY,
     "tiny": TINY_QWEN3,
 }

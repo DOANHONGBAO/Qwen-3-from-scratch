@@ -47,7 +47,7 @@ out    = softmax_fp32(scores) v               -> (B, H, T, d_h) -> (B, T, H·d_h
 | 5 | Causal mask | `causal_mask(q_pos, k_pos)`: key position ≤ query position, applied before softmax | `(T, S)` bool | M1.4 **done** |
 | 6 | Grouped Query Attention | see §1; query head `h` reads KV head `h // g` — [details](components/attention.md) | `(B,T,d) → (B,T,d)` | M1.4 **done** |
 | 7 | Decoder block | two pre-norm residual sublayers — [details](components/decoder.md) | `(B,T,d) → (B,T,d)` | M1.5 **done** |
-| 8 | Qwen3 model | embedding → N blocks → norm → tied LM head | `(B,T) → (B,T,V)` | M1.6 |
+| 8 | Qwen3 model | embedding → N blocks → norm → tied LM head (+ causal LM loss, greedy generation) — [details](components/model.md) | `(B,T) → (B,T,V)` | M1.6 **done** |
 | 9 | Tokenizer | byte-level BPE from official `tokenizer.json` + special tokens | `str ↔ list[int]` | M2 |
 | 10 | KV cache | per-layer `(k, v)` of shape `(B,H_kv,S,d_h)`; RoPE offset = past length | — | M2 |
 | 11 | Text generation | greedy (then sampling) decoding loop, EOS stop | `(B,T) → (B,T+n)` | M2 |
@@ -80,7 +80,7 @@ can be written module-by-module.
 | `layers/qk_norm.py` — `QKNorm`, `apply_qk_norm` | part of `include/qwen3/attention.hpp` | **M1.4: done** / M3 |
 | `layers/attention.py` — `GroupedQueryAttention`, `repeat_kv`, `query_to_kv_head`, `causal_mask`, `attention_softmax` | `include/qwen3/attention.hpp` (requirements: [attention.md §9](components/attention.md#9-requirements-for-the-c20-port-m3)) | **M1.4: done** / M3 |
 | `layers/decoder.py` — `Qwen3DecoderLayer`, `DecoderTrace` | `include/qwen3/decoder.hpp` | **M1.5: done** / M3 |
-| `model.py` | `include/qwen3/model.hpp` | M1.6 / M3 |
+| `model.py` — `Qwen3Model`, `Qwen3ForCausalLM`; `loss.py` — `causal_lm_loss`; `generation.py` — `greedy_generate` | `include/qwen3/model.hpp` (contract: [model.md §8](components/model.md#8-c20-port-contract-m3)) | **M1.6: done** / M3 |
 | `weights.py` (HF → native name mapping) | `include/qwen3/weights.hpp` | M2 / M3 |
 | `tokenizer.py` | (reuse Python or a C++ BPE later) | M2 / M3+ |
 | `kv_cache.py` | `include/qwen3/kv_cache.hpp` | M2 / M3 |
@@ -106,7 +106,10 @@ names equal the official HF `config.json` keys. It validates itself
 (`H % H_kv == 0`, even `d_h`, positive sizes, supported dtype) and refuses HF
 features we do not support (sliding window, RoPE scaling, non-SiLU) with
 `NotImplementedError` instead of ignoring them. It does not import torch.
-Presets: `TINY_QWEN3` (unit tests) and `QWEN3_0_6B_BASE` (target).
+Presets: `TINY_QWEN3` (component unit tests, `head_dim ≠ H/N`), `QWEN3_TINY`
+(`configs/qwen3_tiny.json`, the educational Tiny LM of M1.6) and `QWEN3_0_6B_BASE`
+(target checkpoint architecture). M1.6 added `attention_dropout` (must be 0.0) and
+`initializer_range`.
 
 ## 5. Testing conventions
 

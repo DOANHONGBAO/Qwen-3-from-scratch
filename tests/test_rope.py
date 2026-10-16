@@ -447,3 +447,25 @@ def test_q_k_mismatch_rejected() -> None:
     cos, sin = RotaryEmbedding(8)(make_position_ids(4))
     with pytest.raises(ValueError, match="must agree"):
         apply_rope_to_qk(torch.randn(1, 4, 4, 8), torch.randn(1, 2, 3, 8), cos, sin)
+
+
+# ------------------------------------------- regression: half-precision casts (M1.6)
+def test_module_cast_to_bfloat16_keeps_float32_frequencies() -> None:
+    """``model.to(bfloat16)`` must not round inv_freq / cached tables to bfloat16."""
+    fresh = RotaryEmbedding(64, 1_000_000.0, max_position_embeddings=512)
+    cast = RotaryEmbedding(64, 1_000_000.0, max_position_embeddings=512).to(torch.bfloat16)
+    assert cast.inv_freq.dtype == torch.float32
+    assert torch.equal(cast.inv_freq, fresh.inv_freq)
+    pos = torch.tensor([0, 256, 257, 511])
+    for a, b in zip(cast(pos, torch.bfloat16), fresh(pos, torch.bfloat16), strict=True):
+        assert torch.equal(a, b)
+    assert RotaryEmbedding(8).double().inv_freq.dtype == torch.float64
+
+
+def test_angles_computed_in_float32_even_for_half_inv_freq() -> None:
+    # bfloat16 cannot represent 257; angles must still distinguish positions 256 and 257.
+    inv = compute_inv_freq(8, 10_000.0).to(torch.bfloat16)
+    cos, _ = rope_cos_sin(torch.tensor([256, 257]), inv, dtype=torch.float32)
+    assert not torch.equal(cos[0], cos[1])
+    exact = torch.cos(torch.tensor([256.0, 257.0])[:, None] * inv.float())
+    assert torch.equal(cos[:, :4], exact)

@@ -37,8 +37,8 @@ values, determinism, invalid input), "common mistakes" notes.
   - [x] QK-Norm — `layers/qk_norm.py` (reuses RMSNorm), unit + HF parity tests (bit-identical), doc `docs/components/qk_norm.md`
   - [x] GQA attention — `layers/attention.py` (projections, QK-Norm, RoPE, contiguous KV grouping, position-based causal mask, float32 softmax, `o_proj`); every intermediate and all gradients bit-identical to HF eager `Qwen3Attention` for MHA/GQA/MQA; leakage, float64 loop and SDPA references; notebook `04_qk_norm_gqa.ipynb`; doc `docs/components/attention.md`; fixture `tests/fixtures/attention_small.json`
 - [x] M1.5 Decoder block — `layers/decoder.py` (`Qwen3DecoderLayer`: pre-norm attention + SwiGLU residual sublayers, HF parameter names), 29 unit tests (ordering, residual/identity ablations, norm placement, leakage, gradcheck), HF parity (every intermediate and all fp32 gradients bit-identical), notebook `05_decoder_block.ipynb`, doc `docs/components/decoder.md`
-- [ ] M1.6 Qwen3 model (tied embeddings, parameter count == `estimate_num_parameters`)
-- [ ] M1.7 Notebook walkthrough of the tiny model
+- [x] M1.6 Tiny Qwen3 causal LM — `model.py` (`Qwen3Model`, `Qwen3ForCausalLM`, real weight tying, HF-style init, padding mask + position ids), `loss.py` (shift-once causal LM loss, ignore_index, explicit no-target error), `generation.py` (greedy, context limit), `configs/qwen3_tiny.json` (426,752 params = estimate); embeddings, every layer, final norm, logits, loss and **all gradients bit-identical** to HF `Qwen3ForCausalLM`; mandatory prefix-leakage test; CLI demo; fixture `tests/fixtures/model_tiny.json`; doc `docs/components/model.md`
+- [x] M1.7 Notebook walkthrough of the tiny model — delivered as `notebooks/06_tiny_qwen3.ipynb` together with M1.6
 
 **Acceptance:** all modules tested on CPU; full tiny-model forward is
 deterministic; parameter count matches the analytic count; CI green.

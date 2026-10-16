@@ -163,6 +163,14 @@ The real `KVCache` comes in M2.
 - Order inside attention (M1.4): `q_proj` → reshape → `q_norm` (RMSNorm over
   `D`) → transpose → RoPE.
 
+**Half-precision casts (fixed in M1.6, D-027).** `Module.to(torch.bfloat16)` casts
+floating buffers, which used to round `inv_freq` (and cached tables) to bf16 and
+made the angles bf16 (bf16 cannot represent position 257). `RotaryEmbedding`
+now keeps `inv_freq` in float32 across such casts, and `rope_cos_sin` computes
+angles in at least float32. Regression tests are in `tests/test_rope.py`.
+HF's `Qwen3RotaryEmbedding` still rounds `inv_freq` on `.to(bf16)`; a model created
+directly in bf16 keeps it float32.
+
 **float32 limits** (inherited from the HF implementation):
 angle error grows with position. Max angle error is `2.9e-4` rad for positions
 < 4096 and `2.4e-3` rad up to 32,767. As a result, the relative-position identity

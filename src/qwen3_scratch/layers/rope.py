@@ -146,7 +146,9 @@ def rope_cos_sin(
     _check_position_ids(position_ids)
     if inv_freq.dim() != 1:
         raise ValueError(f"inv_freq must be 1-D, got shape {tuple(inv_freq.shape)}")
-    angles = position_ids[..., None].to(inv_freq.dtype) * inv_freq  # (..., T, D/2)
+    # Angles in at least float32: a bfloat16 position cannot even represent 257.
+    angle_dtype = torch.promote_types(inv_freq.dtype, torch.float32)
+    angles = position_ids[..., None].to(angle_dtype) * inv_freq.to(angle_dtype)  # (..., T, D/2)
     angles = torch.cat((angles, angles), dim=-1)  # (..., T, D): pair i uses angle i twice
     out_dtype = dtype or inv_freq.dtype
     return angles.cos().to(out_dtype), angles.sin().to(out_dtype)
@@ -304,6 +306,22 @@ class RotaryEmbedding(nn.Module):
                 dtype
             )
         return rope_cos_sin(position_ids, self.inv_freq, dtype=dtype)
+
+    def _apply(self, fn, recurse=True):
+        # ``module.to(torch.bfloat16)`` would round inv_freq (and the cached tables) to
+        # bfloat16. Keep them float32 (recomputed on the new device), like HF models
+        # created directly in bfloat16; device moves and float64 are honoured.
+        super()._apply(fn, recurse)
+        if self.inv_freq.dtype not in (torch.float32, torch.float64):
+            device = self.inv_freq.device
+            self._buffers["inv_freq"] = compute_inv_freq(
+                self.head_dim, self.rope_theta, device=device
+            )
+            if self._cos_cached is not None:
+                pos = make_position_ids(self._cos_cached.shape[0], device=device)
+                cos, sin = rope_cos_sin(pos, self._buffers["inv_freq"])
+                self._buffers["_cos_cached"], self._buffers["_sin_cached"] = cos, sin
+        return self
 
     def extra_repr(self) -> str:
         cached = self.max_position_embeddings or 0

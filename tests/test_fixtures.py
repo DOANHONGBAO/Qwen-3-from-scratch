@@ -64,7 +64,7 @@ def test_fixture_is_current(repo_root, fixture_name) -> None:
 def test_fixture_values_are_exact_float32(repo_root, fixture_name, entry_kind) -> None:
     data = json.loads((repo_root / "tests" / "fixtures" / fixture_name).read_text())
     for entry in data[entry_kind].values():
-        if entry["dtype"] != "float32":
-            continue
+        if not isinstance(entry, dict) or entry["dtype"] != "float32":
+            continue  # integer inputs (token ids, masks) are stored as plain lists
         t = _as_tensor(entry)
         assert torch.equal(t.to(torch.float32).to(torch.float64), t)

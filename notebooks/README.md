@@ -12,6 +12,7 @@ and the explanation never drift apart.
 | `03_rope.ipynb` | M1.3 | RoPE: 2D rotation plot, frequencies vs theta, worked example, relative positions, split-half vs interleaved, KV-cache positions, HF parity, gradients |
 | `04_qk_norm_gqa.ipynb` | M1.4 | Attention from scratch: causal mask heatmaps, MHA/GQA/MQA head mapping, KV-cache sizes, QK-Norm logit bound, full trace, leakage check, HF parity, gradients |
 | `05_decoder_block.ipynb` | M1.5 | Decoder block: equations, shapes, residual identity, pre-norm vs post-norm depth experiment, gradients, HF parity |
+| `06_tiny_qwen3.ipynb` | M1.6 | Full Tiny Qwen3: architecture, config, init, parameter budget plot, embeddings, stacked blocks, final norm, weight tying, next-token distribution plot, shifted loss, backprop, leakage check, greedy decoding, HF parity, why random outputs are meaningless |
 
 Conventions:
 

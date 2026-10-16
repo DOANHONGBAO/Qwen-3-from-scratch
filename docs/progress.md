@@ -3,6 +3,63 @@
 Results are reported as **PASSED / FAILED / SKIPPED / NOT RUN**, exactly as
 observed. Nothing is listed as passed unless it was executed. Newest first.
 
+## 2026-10-16 — M1.6: Tiny Qwen3 causal language model (full forward pass)
+
+### What was done
+- `src/qwen3_scratch/model.py`: `Qwen3Model` (embedding, decoder stack, final
+  RMSNorm, one shared RoPE table per forward, padding mask + position ids, strict
+  input validation) and `Qwen3ForCausalLM` (LM head without bias, real weight
+  tying, HF-style init, unique parameter count, optional loss).
+- `src/qwen3_scratch/loss.py` (shift-once causal LM loss, `ignore_index=-100`,
+  `NoValidTargetsError`), `src/qwen3_scratch/generation.py` (greedy, EOS, context limit).
+- `Qwen3Config`: `attention_dropout`, `initializer_range`, bool validation; new preset
+  `QWEN3_TINY` + `configs/qwen3_tiny.json`; existing config JSONs regenerated.
+- **Integration bug found and fixed (D-027):** `model.to(torch.bfloat16)` rounded
+  RoPE `inv_freq` to bf16 and the angles were computed in bf16. Now frequencies stay
+  float32 and angles are computed in ≥ float32; two regression tests fail on the old
+  code and pass on the new.
+- The float64 loss path was also downcast to float32; it now keeps float64 (D-029).
+- Tests: `tests/test_model.py` (42), `tests/test_causal_lm.py` (18),
+  `tests/test_generation.py` (12), `tests/test_config.py` (33),
+  `tests/parity/test_model_hf.py` (10), `tests/test_scripts.py` (1), fixture checks (16).
+- `notebooks/06_tiny_qwen3.ipynb`, `scripts/demo_tiny_qwen3.py`, `scripts/model_report.py`,
+  `tests/fixtures/model_tiny.json`, `docs/components/model.md`; decisions D-009 (implemented),
+  D-027 to D-031; discrepancies X1/X4 updated.
+
+### Validation (assistant sandbox: Python 3.11.17, torch 2.14.1 on CPU, transformers 5.20.0)
+
+| Check | Result |
+|---|---|
+| `python scripts/check_env.py` | PASSED |
+| `python -m ruff check .` / `python -m ruff format --check .` | PASSED / PASSED (71 files) |
+| `python -m pytest` (with transformers + matplotlib) | PASSED: 588 passed, 2 skipped |
+| `python -m pytest` (transformers and matplotlib simulated missing) | PASSED: 515 passed, 9 skipped |
+| `tests/parity/test_model_hf.py` | PASSED: 10 passed; parameter coverage/shapes/values/counts/tying identical (Tiny, `tiny` D≠H/N, untied); embeddings, each layer output, final norm, logits and loss **bit-identical**; gradients of **all** parameters bit-identical; padded batch identical on real tokens; bf16 forward bit-identical |
+| Mandatory prefix-leakage test (full model) | PASSED: shared-prefix logits equal, future logits differ; zero input-gradient from the future |
+| `python scripts/demo_tiny_qwen3.py` | PASSED (exit 0, ~3 s; also run by `tests/test_scripts.py`) |
+| `notebooks/05_decoder_block.ipynb`, `notebooks/06_tiny_qwen3.ipynb` executed with `nbclient` | PASSED (0 errors; plots inspected) |
+| README code example executed | PASSED |
+| Same on Fedora | NOT RUN by the assistant |
+
+`python scripts/model_report.py` (Tiny Qwen3, 426,752 parameters, ids `(4, 64)`, float32):
+
+| ours vs | tensor | max_abs | mean_abs | rel_l2 |
+|---|---|---|---|---|
+| HF | embeddings, layer 0, layer 1, final norm, logits, loss | 0 | 0 | 0 |
+| HF | grads: embed_tokens, layer0 q_proj, layer0 q_norm, layer1 down_proj, model.norm | 0 | 0 | 0 |
+| float64 model | logits | 7.271e-07 | 8.684e-08 | 4.374e-07 |
+| float64 model | loss | 5.691e-07 | 5.691e-07 | 1.017e-07 |
+
+Loss of the random-weight model: 5.5940800 (HF identical) vs ln 256 = 5.5451775.
+
+### Open items
+- Run on Fedora and push. Confirm GitHub Actions is green.
+- Not implemented by design: KV cache, checkpoint loading, tokenizer, sampling, training.
+
+### Next
+M2 — load the official Qwen3-0.6B-Base weights (explicit download step) and tokenizer,
+compare logits/generation with HF, add the KV cache (awaiting approval).
+
 ## 2026-10-16 — M1.5: Qwen3 decoder block
 
 ### What was done

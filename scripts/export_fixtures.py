@@ -22,6 +22,7 @@ from typing import Any
 
 import torch
 
+from qwen3_scratch.config import Qwen3Config
 from qwen3_scratch.layers import (
     GroupedQueryAttention,
     RotaryEmbedding,
@@ -133,8 +134,63 @@ def attention_fixture() -> dict[str, Any]:
     }
 
 
+def model_fixture() -> dict[str, Any]:
+    """Whole Tiny Qwen3 forward: embeddings, every layer, final norm, logits, loss."""
+    from qwen3_scratch.model import Qwen3ForCausalLM
+
+    seed = 7
+    cfg = Qwen3Config(
+        vocab_size=16,
+        hidden_size=8,
+        intermediate_size=12,
+        num_hidden_layers=2,
+        num_attention_heads=2,
+        num_key_value_heads=1,
+        head_dim=4,
+        max_position_embeddings=16,
+        rope_theta=10_000.0,
+        rms_norm_eps=1e-6,
+        tie_word_embeddings=True,
+    )
+    gen = torch.Generator().manual_seed(seed)
+    model = Qwen3ForCausalLM(cfg, init_weights=False)
+    with torch.no_grad():
+        for name, p in model.named_parameters():  # tied matrix appears once
+            base = 1.0 if "norm" in name else 0.0
+            p.copy_(base + 0.3 * torch.randn(p.shape, generator=gen))
+        ids = torch.tensor([[3, 14, 1, 5, 9]])
+        out = model(ids, labels=ids, output_hidden_states=True)
+    return {
+        "component": "qwen3_for_causal_lm",
+        "description": (
+            "Tiny Qwen3ForCausalLM forward. lm_head.weight is TIED to "
+            "model.embed_tokens.weight (not stored twice). position_ids = 0..T-1, "
+            "attention_mask = all ones (causal only). hidden_states[0] = embeddings, "
+            "hidden_states[i+1] = output of layer i (before the final norm). "
+            "loss = mean next-token cross-entropy with labels = input_ids."
+        ),
+        "seed": seed,
+        "config": cfg.to_dict(),
+        "tolerance": {"rtol": 1e-5, "atol": 1e-5},
+        "inputs": {
+            "input_ids": ids.tolist(),
+            "position_ids": [list(range(ids.shape[1]))],
+            "attention_mask": torch.ones_like(ids).tolist(),
+            "labels": ids.tolist(),
+        },
+        "parameters": {name: _tensor(p) for name, p in model.named_parameters()},
+        "outputs": {
+            **{f"hidden_states_{i}": _tensor(h) for i, h in enumerate(out.hidden_states)},
+            "last_hidden_state": _tensor(out.last_hidden_state),
+            "logits": _tensor(out.logits),
+            "loss": _tensor(out.loss.reshape(1)),
+        },
+    }
+
+
 FIXTURES: dict[str, Callable[[], dict[str, Any]]] = {
     "attention_small.json": attention_fixture,
+    "model_tiny.json": model_fixture,
     "rope_small.json": rope_fixture,
     "swiglu_small.json": swiglu_fixture,
 }

@@ -10,6 +10,7 @@ import pytest
 from qwen3_scratch.config import (
     PRESETS,
     QWEN3_0_6B_BASE,
+    QWEN3_TINY,
     RASCHKA_KEY_MAP,
     TINY_QWEN3,
     Qwen3Config,
@@ -67,11 +68,30 @@ def test_json_roundtrip(tmp_path, name: str) -> None:
     assert Qwen3Config.from_json(path) == PRESETS[name]
 
 
-@pytest.mark.parametrize("name", ["qwen3_0.6b_base", "tiny_qwen3"])
+@pytest.mark.parametrize("name", ["qwen3_0.6b_base", "tiny_qwen3", "qwen3_tiny"])
 def test_committed_config_files_match_presets(repo_root, name: str) -> None:
     loaded = Qwen3Config.from_json(repo_root / "configs" / f"{name}.json")
-    expected = {"qwen3_0.6b_base": QWEN3_0_6B_BASE, "tiny_qwen3": TINY_QWEN3}[name]
+    expected = {
+        "qwen3_0.6b_base": QWEN3_0_6B_BASE,
+        "tiny_qwen3": TINY_QWEN3,
+        "qwen3_tiny": QWEN3_TINY,
+    }[name]
     assert loaded == expected
+
+
+def test_qwen3_tiny_values_from_task_spec() -> None:
+    c = QWEN3_TINY
+    assert (c.vocab_size, c.hidden_size, c.num_hidden_layers) == (256, 128, 2)
+    assert (c.num_attention_heads, c.num_key_value_heads, c.head_dim) == (4, 2, 32)
+    assert (c.intermediate_size, c.max_position_embeddings) == (384, 128)
+    assert c.rope_theta == 1_000_000.0 and c.rms_norm_eps == 1e-6
+    assert c.tie_word_embeddings and not c.attention_bias and c.attention_dropout == 0.0
+    assert c.estimate_num_parameters() == 426_752
+
+
+def test_official_config_carries_dropout_and_init_range(hf_config) -> None:
+    cfg = Qwen3Config.from_hf_config(hf_config | {"initializer_range": 0.01})
+    assert cfg.attention_dropout == 0.0 and cfg.initializer_range == 0.01
 
 
 @pytest.mark.parametrize(
@@ -86,6 +106,11 @@ def test_committed_config_files_match_presets(repo_root, name: str) -> None:
         ("rope_theta", 0.0),
         ("rms_norm_eps", 0.0),
         ("dtype", "int8"),
+        ("attention_dropout", -0.1),
+        ("attention_dropout", 1.0),
+        ("initializer_range", 0.0),
+        ("tie_word_embeddings", 1),
+        ("attention_bias", "no"),
     ],
 )
 def test_invalid_values_raise(field: str, value) -> None:
