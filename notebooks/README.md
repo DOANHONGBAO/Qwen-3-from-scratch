@@ -8,10 +8,12 @@ and the explanation never drift apart.
 |---|---|---|
 | `00_environment_and_config.ipynb` | M0 | Environment report, `Qwen3Config`, parameter budget of Qwen3-0.6B |
 | `01_rmsnorm.ipynb` | M1.1 | RMSNorm: intuition, math, manual example, shapes, LayerNorm vs RMSNorm, HF parity, gradients, precision |
+| `02_swiglu.ipynb` | M1.2 | SwiGLU: FFN variants, SiLU vs ReLU/GELU plot, manual example, shapes, HF parity, two-branch gradients |
 
 Conventions:
 
 - Install the extra once: `pip install -e ".[notebooks]"`, then `jupyter lab`.
+  Plots need `matplotlib`; without it the notebooks print text tables instead.
 - Commit notebooks **without outputs** (clear outputs before committing) to keep
   diffs reviewable and avoid leaking local paths. `tests/test_notebooks.py`
   executes every notebook's code cells and enforces this.

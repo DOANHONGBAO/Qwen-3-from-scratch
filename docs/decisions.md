@@ -88,3 +88,19 @@ there. **Accepted.**
 `tests/test_notebooks.py` runs every notebook's code cells with `exec` (no Jupyter
 dependency) and fails if a notebook is committed with outputs. Keeps notebooks in
 sync with the package API. **Accepted.**
+
+## D-017 · 2026-10-16 · SwiGLU module naming and bias policy
+`SwiGLUFeedForward` uses HF parameter names (`gate_proj`, `up_proj`, `down_proj`)
+so `Qwen3MLP` state dicts load with `strict=True`. `from_config` always builds it
+without biases, matching HF (hardcoded `bias=False`, independent of
+`attention_bias`). An explicit `bias` flag remains for teaching and tests.
+**Accepted.**
+
+## D-018 · 2026-10-16 · C++ parity fixtures are small exact JSON files
+`scripts/export_fixtures.py` writes tiny fixtures (a few KB) to `tests/fixtures/`
+as JSON whose numbers are exact float32 values. They are reviewable, need no
+binary format, and are not blocked by the `*.npy`/`*.bin` ignore rules. They are
+committed. `tests/test_fixtures.py` checks inputs and parameters bit-exactly and
+outputs within the stored tolerance. Large fixtures for M3 will be generated at
+test time instead. Supersedes the "generate as CTest step" note in
+docs/components/rmsnorm.md for small fixtures. **Accepted.**

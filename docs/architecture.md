@@ -40,7 +40,7 @@ out    = softmax(scores) v                    -> (B, H, T, d_h) -> (B, T, H·d_h
 | # | Component | Math (summary) | In → out shape | Milestone |
 |---|---|---|---|---|
 | 1 | RMSNorm | `y = x / sqrt(mean(x², -1) + ε) ⊙ w` (computed in fp32) — [details](components/rmsnorm.md) | `(..., n) → (..., n)` | M1.1 **done** |
-| 2 | SwiGLU FeedForward | `down( silu(gate(x)) ⊙ up(x) )` | `(B,T,d) → (B,T,d)` via `d_ff` | M1.2 |
+| 2 | SwiGLU FeedForward | `down( silu(gate(x)) ⊙ up(x) )`, no biases — [details](components/swiglu.md) | `(B,T,d) → (B,T,d)` via `d_ff` | M1.2 **done** |
 | 3 | RoPE | rotate pairs `(x_i, x_{i+d_h/2})` by `p·θ^{-2i/d_h}` ("rotate_half" layout) | `(B,H,T,d_h) → same` | M1.3 |
 | 4 | QK-Norm | RMSNorm over `d_h` of each Q and K head, **before** RoPE | `(B,T,H,d_h) → same` | M1.4 |
 | 5 | Causal mask | position `i` may attend to keys `j ≤ past + i` | `(T, S)` bool | M1.5 |
@@ -56,7 +56,7 @@ Qwen3-specific details to get right:
 - **Independent `head_dim`.** For 0.6B, `d/H = 64` but `d_h = 128`, so
   `Wq: 1024 → 2048` and `Wo: 2048 → 1024`. Code that derives `d_h = d / H` is wrong.
 - **QK-Norm** is per head (weight shape `(d_h,)`), applied after the projection
-  and *before* RoPE. It replaces Qwen2's QKV bias (`attention_bias = false`).
+  and *before* RoPE. Qwen3 also drops Qwen2's QKV bias (`attention_bias = false`).
 - **GQA** with `H_kv = 8` for 16 query heads (`g = 2`).
 - **Tied embeddings** (`tie_word_embeddings = true`): the LM head reuses the
   embedding matrix; the checkpoint may contain no separate `lm_head.weight`.
@@ -74,7 +74,7 @@ can be written module-by-module.
 | `config.py` — `Qwen3Config`, presets | `include/qwen3/config.hpp`, `src/config.cpp` | **M0: done** |
 | `env.py` — environment checks | — (Python tooling only) | **M0: done** |
 | `layers/rmsnorm.py` — `RMSNorm`, `rms_norm`, `rms_norm_textbook` | `include/qwen3/rmsnorm.hpp` (requirements: [rmsnorm.md §9](components/rmsnorm.md#9-requirements-for-the-c20-port-m3)) | **M1.1: done** / M3 |
-| `layers/feedforward.py` | `include/qwen3/feedforward.hpp` | M1.2 / M3 |
+| `layers/swiglu.py` — `SwiGLUFeedForward`, `swiglu_textbook`, `silu_textbook` | `include/qwen3/swiglu.hpp` (requirements: [swiglu.md §10](components/swiglu.md#10-requirements-for-the-c20-port-m3)) | **M1.2: done** / M3 |
 | `layers/rope.py` | `include/qwen3/rope.hpp` | M1.3 / M3 |
 | `layers/attention.py` (QK-Norm, mask, GQA) | `include/qwen3/attention.hpp` | M1.4–1.6 / M3 |
 | `layers/block.py` | `include/qwen3/block.hpp` | M1.7 / M3 |
@@ -119,4 +119,6 @@ Presets: `TINY_QWEN3` (unit tests) and `QWEN3_0_6B_BASE` (target).
   `QWEN3_WEIGHTS_DIR`; `slow` = opt-out with `-m "not slow"`.
 - Reference comparisons against `transformers` (M2) are marked `weights` or use
   randomly initialised tiny HF models, and live in `tests/parity/`.
-- C++ tests are CTest executables; parity fixtures are exported from Python.
+- C++ tests are CTest executables; parity fixtures are exported from Python
+  (`scripts/export_fixtures.py` → small exact-float32 JSON files in
+  `tests/fixtures/`, kept current by `tests/test_fixtures.py`).

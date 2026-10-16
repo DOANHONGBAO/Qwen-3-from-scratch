@@ -3,6 +3,43 @@
 Results are reported as **PASSED / FAILED / SKIPPED / NOT RUN**, exactly as
 observed. Nothing is listed as passed unless it was executed. Newest first.
 
+## 2026-10-16 — M1.2: SwiGLU feed-forward
+
+### What was done
+- `src/qwen3_scratch/layers/swiglu.py`: `SwiGLUFeedForward` (`gate_proj`, `up_proj`,
+  `down_proj`, no biases, SiLU on the gate), `from_config`, plus the educational
+  `swiglu_textbook` / `silu_textbook`.
+- Tests: `tests/test_swiglu.py` (71), `tests/parity/test_swiglu_hf.py` (9),
+  `tests/test_fixtures.py` (4, C++ fixtures), notebooks auto-collected by
+  `tests/test_notebooks.py`.
+- `notebooks/02_swiglu.ipynb`, `docs/components/swiglu.md`, `scripts/swiglu_report.py`,
+  `scripts/export_fixtures.py` + `tests/fixtures/swiglu_small.json`. Decisions D-017, D-018.
+- Verified in the HF source: `Qwen3MLP` uses `bias=False` for all three
+  projections and `ACT2FN[hidden_act]` = SiLU on `gate_proj`.
+
+### Validation (assistant sandbox: Python 3.11.17, torch 2.14.1 on CPU, transformers 5.20.0)
+
+| Check | Result |
+|---|---|
+| `python scripts/check_env.py` | PASSED |
+| `python -m ruff check .` / `python -m ruff format --check .` | PASSED / PASSED |
+| `python -m pytest` (with transformers + matplotlib) | PASSED: 234 passed, 2 skipped |
+| `python -m pytest` (transformers and matplotlib simulated missing) | PASSED: 212 passed, 4 skipped |
+| `tests/test_swiglu.py` | PASSED: 71 passed |
+| `tests/parity/test_swiglu_hf.py` | PASSED: 9 passed, forward **and** backward bit-identical to `Qwen3MLP` (fp32, bf16) |
+| Closed-form gradients vs autograd; `gradcheck`/`gradgradcheck` (float64) | PASSED |
+| `notebooks/02_swiglu.ipynb` executed with `nbclient` (plot rendered and inspected) | PASSED |
+| Same on Fedora | NOT RUN by the assistant |
+
+`python scripts/swiglu_report.py` (0.6B sizes, input (2, 64, 1024), weights 0.02·N(0,1)):
+
+| dtype | ours vs | max_abs | max_abs / max abs(ref) | rel_l2 | elements differing |
+|---|---|---|---|---|---|
+| float32 | textbook float64 | 6.434e-07 | 5.051e-07 | 5.497e-07 | 100.0% |
+| float32 | HF Qwen3MLP | 0 | 0 | 0 | 0.0% |
+| bfloat16 | textbook float64 | 5.686e-03 | 4.462e-03 | 3.910e-03 | 100.0% |
+| bfloat16 | HF Qwen3MLP | 0 | 0 | 0 | 0.0% |
+
 ## 2026-10-16 — M1.1: RMSNorm
 
 ### What was done
@@ -68,7 +105,7 @@ bf16 is bit-identical to the scale-then-cast order.
 - Pending from M0: confirm GitHub Actions is green after pushing.
 
 ### Next
-M1.2 — SwiGLU FeedForward (awaiting approval).
+M1.2 — SwiGLU FeedForward (done, see above).
 
 ## 2026-10-16 — M0: project foundation
 
