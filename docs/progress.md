@@ -3,6 +3,20 @@
 Results are reported as **PASSED / FAILED / SKIPPED / NOT RUN**, exactly as
 observed. Nothing is listed as passed unless it was executed. Newest first.
 
+## 2026-10-17 — Repository review and cleanup
+
+- Reviewed all 187 tracked files: no secrets, weights, tensors, logs or build outputs;
+  largest file `cpp/tests/model_reference.hpp` (151 KB, generated test data). Every
+  config, script, fixture and notebook is referenced by tests or documentation.
+  `CLAUDE.md` is kept on purpose: it holds the instructions for coding agents
+  (project rule §9); a C++ style section was added to it.
+- `test_ops.cpp`, `test_rmsnorm.cpp`, `test_tensor.cpp` now use the shared
+  `cpp/tests/test_utils.hpp` instead of their own copies of `check` / `check_close` /
+  `check_throws` (−144 lines); CTest name `rmsnorm.basic` → `rmsnorm.reference`.
+- `docs/architecture.md` module map and test conventions, `README.md` layout updated
+  to the finished C++ port.
+- Validation (sandbox): CTest 11/11 PASSED, 0 warnings; ruff PASSED.
+
 ## 2026-10-17 — M4.1: C++ CPU profiling and optimisation
 
 ### What was done
