@@ -18,7 +18,7 @@ option(QWEN3_BUILD_TESTS "Build C++ unit tests" ON)
 
 # Library: header-first design. Model kernels (RMSNorm, RoPE, GQA, ...) are added
 # in M3, one module per Python counterpart (see docs/architecture.md).
-add_library(qwen3 src/config.cpp src/tensor.cpp src/ops.cpp src/rmsnorm.cpp)
+add_library(qwen3 src/config.cpp src/tensor.cpp src/ops.cpp src/rmsnorm.cpp src/swiglu.cpp)
 target_include_directories(qwen3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(qwen3 PUBLIC cxx_std_20)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -44,5 +44,9 @@ if(QWEN3_BUILD_TESTS)
   add_executable(test_rmsnorm tests/test_rmsnorm.cpp)
   target_link_libraries(test_rmsnorm PRIVATE qwen3)
   add_test(NAME rmsnorm.basic COMMAND test_rmsnorm)
+
+  add_executable(test_swiglu tests/test_swiglu.cpp)
+  target_link_libraries(test_swiglu PRIVATE qwen3)
+  add_test(NAME swiglu.reference COMMAND test_swiglu)
 
   endif()
