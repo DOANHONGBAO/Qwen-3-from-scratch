@@ -3,6 +3,37 @@
 Results are reported as **PASSED / FAILED / SKIPPED / NOT RUN**, exactly as
 observed. Nothing is listed as passed unless it was executed. Newest first.
 
+## 2026-10-17 — M3: C++20 port of the full model
+
+### What was done
+- Written by the maintainer in guided lessons: `Tensor`, ops (elementwise, SiLU,
+  stable softmax, matmul, linear), `RMSNorm`, `SwiGLU`, `RoPE` (split-half), each with
+  a PyTorch reference header and CTest.
+- Added: `Json` (minimal parser), `SafetensorsFile` (F32/BF16/F16, strict offsets) and
+  `save_safetensors`, `KVCache` (time-major, D-043), `Attention` (GQA + QK-Norm + RoPE
+  + causal softmax, cached or not), `DecoderLayer`, `Qwen3Model` (embedding, layers,
+  final norm, tied/untied LM head, `last_only`), `load_pretrained` (single file or
+  sharded index), `greedy_generate`, CLI `cpp/tools/qwen3_run.cpp`.
+- Reference exporters `scripts/export_cpp_{attention,model}_reference.py`; parity
+  script `scripts/verify_cpp_pretrained.py` (C++ vs the saved M2 Hugging Face float32
+  logits and greedy ids). Decisions D-041–D-043.
+
+### Validation
+| Check | Where | Result |
+|---|---|---|
+| CTest (10 tests: config, tensor, ops, rmsnorm, swiglu, rope, kv_cache, attention, safetensors, model), 0 warnings with `-Wall -Wextra -Wpedantic -Wconversion` | sandbox | PASSED |
+| Same with AddressSanitizer + UBSan (Debug) | sandbox | PASSED |
+| Attention vs PyTorch (GQA 4/2, D=8 ≠ H/Nq), uncached and cached 3+1+1 | sandbox | PASSED — max \|Δ\| 1.2e-7 |
+| Tiny random model vs PyTorch: each layer, logits, cached 4+1+1+1, greedy 10 tokens | sandbox | PASSED — logits max \|Δ\| 1.0e-5 (\|logit\| ≤ 14.5), tokens identical |
+| Checkpoint loading round trip (safetensors F32), missing / wrong shape / extra tensor errors | sandbox | PASSED |
+| Name map vs the real Qwen3-0.6B-Base tensor list (M2 fixture, 310 tensors) | sandbox | PASSED |
+| Full 0.6B-shape **random synthetic** checkpoint (BF16), C++ vs our PyTorch, 2 prompts × 8 tokens | sandbox (2 vCPU) | PASSED — max \|Δlogit\| 8.6e-6, greedy identical; load 1.9 s, peak RSS 2.23 GiB, decode 1.8 tok/s (1 thread) |
+| Real Qwen3-0.6B-Base, C++ vs saved HF float32 run | maintainer's laptop | NOT RUN (to be run: `python scripts/verify_cpp_pretrained.py --download`) |
+
+### Open items
+Real-checkpoint C++ parity on the laptop; tokenizer in C++ (not planned); BLAS /
+threads / SIMD (M4).
+
 ## 2026-10-16 — M2.2: KV cache and efficient generation
 
 ### What was done
