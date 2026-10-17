@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 """Generate cpp/tests/ops_reference.hpp: PyTorch reference values for test_ops.cpp.
 
