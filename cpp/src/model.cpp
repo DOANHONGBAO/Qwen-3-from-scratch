@@ -2,6 +2,7 @@
 
 #include "qwen3/json.hpp"
 #include "qwen3/ops.hpp"
+#include "qwen3/profiler.hpp"
 #include "qwen3/safetensors.hpp"
 
 static int as_int(int64_t v) { return static_cast<int>(v); }
@@ -136,6 +137,7 @@ Tensor Qwen3Model::forward(vector<vector<int>>& input_ids, KVCache* cache, bool 
         hn = last;
     }
     Tensor& head = config.tie_word_embeddings ? embed_tokens : lm_head;
+    ScopedTimer timer("lm_head");
     return linear(hn, head);
 }
 

@@ -1,6 +1,7 @@
 #include "qwen3/attention.hpp"
 
 #include "qwen3/ops.hpp"
+#include "qwen3/profiler.hpp"
 
 // RMSNorm va RoPE khong co constructor mac dinh, nen phai khoi tao chung
 // trong "member initializer list" (phan sau dau ':') truoc khi vao than ham.
@@ -64,42 +65,43 @@ Tensor Attention::forward(Tensor& x, KVCache* cache, int layer) {
     store->append(store_layer, kr, vt);
 
     // 5. Attention tung (batch, query head, token)
-    int group = Nq / Nkv;
-    float scaling = static_cast<float>(1.0 / sqrt(static_cast<double>(D)));
-    Tensor ctx({B, T, Nq * D});            // ghi thang layout [B, T, Nq*D] cho o_proj
-    float* pq = qr.data();
-    float* pc = ctx.data();
-    vector<float> probs(static_cast<size_t>(start_pos + T));
+    Tensor ctx({B, T, Nq * D});                // ghi thang layout [B, T, Nq*D] cho o_proj
+    {
+        ScopedTimer core_timer("attention.core");   // chi score/softmax/tong, khong tinh proj
+        int group = Nq / Nkv;
+        float scaling = static_cast<float>(1.0 / sqrt(static_cast<double>(D)));
+        float* pq = qr.data();
+        float* pc = ctx.data();
+        vector<float> probs(static_cast<size_t>(start_pos + T));
 
-    for (int b = 0; b < B; b++) {
-        for (int h = 0; h < Nq; h++) {
-            int kvh = h / group;                       // GQA: [0,0,1,1,...] khi group = 2
-            for (int t = 0; t < T; t++) {
-                int qpos = start_pos + t;              // vi tri tuyet doi cua query
-                float* qv = pq + ((b * Nq + h) * T + t) * D;
+        for (int b = 0; b < B; b++) {
+            for (int h = 0; h < Nq; h++) {
+                int kvh = h / group;                       // GQA: [0,0,1,1,...] khi group = 2
+                for (int t = 0; t < T; t++) {
+                    int qpos = start_pos + t;              // vi tri tuyet doi cua query
+                    float* qv = pq + ((b * Nq + h) * T + t) * D;
 
-                // score voi key j = 0..qpos (j > qpos bi mask = xac suat 0, bo qua luon)
-                float mx = -INFINITY;
-                for (int j = 0; j <= qpos; j++) {
-                    float* kv = store->key(store_layer, j, b, kvh);
-                    float dot = 0.0f;
-                    for (int d = 0; d < D; d++) dot += qv[d] * kv[d];
-                    probs[static_cast<size_t>(j)] = dot * scaling;
-                    mx = max(mx, probs[static_cast<size_t>(j)]);
-                }
-                // softmax on dinh: tru max truoc khi exp
-                float sum = 0.0f;
-                for (int j = 0; j <= qpos; j++) {
-                    float e = exp(probs[static_cast<size_t>(j)] - mx);
-                    probs[static_cast<size_t>(j)] = e;
-                    sum += e;
-                }
-                // ctx = sum_j p_j * v_j
-                float* out = pc + (b * T + t) * Nq * D + h * D;
-                for (int j = 0; j <= qpos; j++) {
-                    float p = probs[static_cast<size_t>(j)] / sum;
-                    float* vv = store->value(store_layer, j, b, kvh);
-                    for (int d = 0; d < D; d++) out[d] += p * vv[d];
+                    // score voi key j = 0..qpos (j > qpos bi mask = xac suat 0, bo qua luon)
+                    float mx = -INFINITY;
+                    for (int j = 0; j <= qpos; j++) {
+                        float* kv = store->key(store_layer, j, b, kvh);
+                        probs[static_cast<size_t>(j)] = dot_product(qv, kv, D) * scaling;
+                        mx = max(mx, probs[static_cast<size_t>(j)]);
+                    }
+                    // softmax on dinh: tru max truoc khi exp
+                    float sum = 0.0f;
+                    for (int j = 0; j <= qpos; j++) {
+                        float e = exp(probs[static_cast<size_t>(j)] - mx);
+                        probs[static_cast<size_t>(j)] = e;
+                        sum += e;
+                    }
+                    // ctx = sum_j p_j * v_j
+                    float* out = pc + (b * T + t) * Nq * D + h * D;
+                    for (int j = 0; j <= qpos; j++) {
+                        float p = probs[static_cast<size_t>(j)] / sum;
+                        float* vv = store->value(store_layer, j, b, kvh);
+                        for (int d = 0; d < D; d++) out[d] += p * vv[d];
+                    }
                 }
             }
         }

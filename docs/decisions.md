@@ -314,3 +314,24 @@ decode step appends at the end (amortised O(1)) instead of copying the whole cac
 `key(layer, j, b, h)`; without a cache it uses a temporary cache of the same layout, so
 there is a single attention code path. Rules match D-038 (append once per layer per
 forward, `commit`, `rollback`, `max_length`). **Accepted.**
+
+## D-044 · 2026-10-17 · C++ CPU optimisations (M4.1): order, SIMD, threads
+Each change was measured on its own (`qwen3_bench`, synthetic 0.6B-shape checkpoint)
+and kept only if it helped: (1) `linear` iterates over weight rows outside and input
+rows inside, so a prefill reads each weight row once (no gain alone: the single
+accumulator chain was the limit); (2) `dot_product` with 8 independent partial sums,
+which the compiler turns into SIMD (prefill ~5×, decode ~1.6×); (3) OpenMP over the
+output features of `linear`: every output element is still computed by the same
+sequential code, so results are bit-identical for any thread count (`test_threads`);
+(4) optional `-march=native` (`QWEN3_NATIVE`, off by default for portable CI builds).
+The new summation order changes results in the last bits only (CTest tolerances
+unchanged; synthetic 0.6B parity max |Δlogit| 5.8e-6). Attention core (4 % of the time
+at 128 tokens) is not parallelised yet. No BLAS dependency. **Accepted.**
+
+## D-045 · 2026-10-17 · C++ benchmark methodology
+`qwen3_bench` uses synthetic prompt ids, greedy decoding without EOS, one warm-up and
+the median of `--repeats` runs; prefill tokens/s = P / prefill time, decode tokens/s =
+(N − 1) / decode time; load time and peak RSS reported separately. The built-in
+profiler (off unless benchmarking) gives exclusive time shares per part.
+`scripts/benchmark_cpp.py` builds an `-march=native` copy in `build/cpp-native` and
+writes `results/m4/benchmark_cpp.{json,csv}` with CPU, compiler and commit. **Accepted.**

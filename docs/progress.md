@@ -3,6 +3,47 @@
 Results are reported as **PASSED / FAILED / SKIPPED / NOT RUN**, exactly as
 observed. Nothing is listed as passed unless it was executed. Newest first.
 
+## 2026-10-17 — M4.1: C++ CPU profiling and optimisation
+
+### What was done
+- `cpp/include/qwen3/profiler.hpp` (named timers, off by default) with timers around
+  norms, attention (projections and core), MLP and LM head.
+- `cpp/tools/qwen3_bench.cpp` and `scripts/benchmark_cpp.py` (D-045); `--threads` for
+  `qwen3_run`.
+- `linear`: weight-row-outer loop, `dot_product` with 8 partial sums (SIMD), OpenMP
+  threads; attention uses `dot_product`; CMake options `QWEN3_OPENMP` (on) and
+  `QWEN3_NATIVE` (off). Test `test_threads` (bit-identical results for 1–4 threads).
+  Decision D-044.
+
+### Step-by-step measurements
+Sandbox only (Intel Xeon @ 2.1 GHz, 2 vCPU, GCC 13), **random synthetic** checkpoint with
+the exact Qwen3-0.6B shapes, 16 new tokens, median of 2. Tokens/s for prompt 16 / 128:
+
+| Step | Threads | Prefill tok/s | Decode tok/s |
+|---|---|---|---|
+| M3 baseline (naive loops) | 1 | 3.0 / 3.3 | 1.91 / 1.82 |
+| + weight-row-outer loop | 1 | 3.2 / 3.3 | 1.88 / 1.81 |
+| + `dot_product` (8 partial sums) | 1 | 13.9 / 16.6 | 2.95 / 2.86 |
+| + OpenMP | 2 | 20.7 / 27.9 | 5.12 / 5.11 |
+| + `-march=native` | 1 | 15.7 / 18.6 | 3.49 / 3.37 |
+| + `-march=native` | 2 | 26.1 / 32.0 | 6.32 / 6.60 |
+
+Time shares at the last step (2 threads, prompt 128): MLP 46 %, attention projections
+37 %, LM head 9 %, attention core 4 %, norms < 1 %. Decode reads all 2.4 GB of float32
+weights per token, so it is now close to memory-bandwidth bound.
+
+### Validation
+| Check | Where | Result |
+|---|---|---|
+| CTest (11 tests, incl. `threads.determinism`), 0 warnings; also with ASan/UBSan and with `QWEN3_OPENMP=OFF` | sandbox | PASSED |
+| Synthetic 0.6B parity after optimisation (native build), C++ vs our PyTorch | sandbox | PASSED — max \|Δlogit\| 5.8e-6, greedy identical |
+| Real Qwen3-0.6B-Base parity rerun after optimisation | maintainer's laptop | NOT RUN |
+| Benchmark on the maintainer's laptop | maintainer's laptop | NOT RUN |
+
+### Open items
+Laptop benchmark and parity rerun; bfloat16 weight storage; parallel attention core for
+long contexts.
+
 ## 2026-10-17 — M3: C++20 port of the full model
 
 ### What was done

@@ -1,6 +1,7 @@
 #include "qwen3/decoder.hpp"
 
 #include "qwen3/ops.hpp"
+#include "qwen3/profiler.hpp"
 
 DecoderLayer::DecoderLayer(qwen3::Config c)
     : input_layernorm(static_cast<int>(c.hidden_size), static_cast<float>(c.rms_norm_eps)),
@@ -11,11 +12,23 @@ DecoderLayer::DecoderLayer(qwen3::Config c)
       mlp(static_cast<int>(c.hidden_size), static_cast<int>(c.intermediate_size)) {}
 
 Tensor DecoderLayer::forward(Tensor& x, KVCache* cache, int layer) {
-    Tensor n1 = input_layernorm.forward(x);
-    Tensor a = self_attn.forward(n1, cache, layer);
+    Tensor a, m;
+    {
+        ScopedTimer timer("layer.norm");
+        a = input_layernorm.forward(x);
+    }
+    {
+        ScopedTimer timer("layer.attention");
+        a = self_attn.forward(a, cache, layer);
+    }
     Tensor h = add(x, a);                       // residual 1
-
-    Tensor n2 = post_attention_layernorm.forward(h);
-    Tensor m = mlp.forward(n2);
+    {
+        ScopedTimer timer("layer.norm");
+        m = post_attention_layernorm.forward(h);
+    }
+    {
+        ScopedTimer timer("layer.mlp");
+        m = mlp.forward(m);
+    }
     return add(h, m);                           // residual 2
 }

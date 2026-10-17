@@ -1,13 +1,14 @@
 // qwen3_run: nap checkpoint Hugging Face (config.json + safetensors) va sinh token greedy.
 //
 //   qwen3_run --model-dir DIR --ids 9707,11,1879 [--ids ...] [--max-new-tokens 16]
-//             [--eos 151643] [--logits-out PREFIX]
+//             [--eos 151643] [--logits-out PREFIX] [--threads N]
 //
 // Tokenizer khong nam trong C++: token id do Python tao ra
 // (scripts/verify_cpp_pretrained.py). Moi prompt in ra 1 dong JSON tren stdout.
 // --logits-out PREFIX: ghi logits cua prompt, float32 tho [T, V], vao PREFIX_p<i>.bin
 #include "qwen3/generate.hpp"
 #include "qwen3/model.hpp"
+#include "qwen3/ops.hpp"
 
 vector<int> parse_ids(string text) {
     vector<int> ids;
@@ -42,7 +43,7 @@ double peak_rss_gib() {
 
 void usage() {
     cerr << "usage: qwen3_run --model-dir DIR --ids 1,2,3 [--ids ...] [--max-new-tokens N]"
-            " [--eos ID] [--logits-out PREFIX]\n";
+            " [--eos ID] [--logits-out PREFIX] [--threads N]\n";
 }
 
 int main(int argc, char** argv) {
@@ -62,6 +63,7 @@ int main(int argc, char** argv) {
         else if (a == "--max-new-tokens") max_new_tokens = stoi(value);
         else if (a == "--eos") eos_ids.push_back(stoi(value));
         else if (a == "--logits-out") logits_out = value;
+        else if (a == "--threads") set_num_threads(stoi(value));
         else {
             usage();
             return 2;
@@ -76,7 +78,8 @@ int main(int argc, char** argv) {
         auto t0 = chrono::steady_clock::now();
         Qwen3Model model = load_pretrained(model_dir);
         double load_s = chrono::duration<double>(chrono::steady_clock::now() - t0).count();
-        cerr << "loaded " << model_dir << " in " << load_s << " s, peak RSS " << peak_rss_gib() << " GiB\n";
+        cerr << "loaded " << model_dir << " in " << load_s << " s, peak RSS " << peak_rss_gib()
+             << " GiB, threads " << get_num_threads() << "\n";
 
         for (size_t p = 0; p < prompts.size(); p++) {
             Tensor prompt_logits;
