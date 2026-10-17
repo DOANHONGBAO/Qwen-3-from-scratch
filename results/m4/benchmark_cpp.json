@@ -1,0 +1,132 @@
+{
+  "status": "RUN",
+  "model_dir_name": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
+  "build": {
+    "flags": "Release, -march=native, OpenMP",
+    "compiler": "c++ (GCC) 16.2.1 20260819 (Red Hat 16.2.1-2)",
+    "commit": "9ff8f33"
+  },
+  "machine": {
+    "cpu": "AMD Ryzen 3 3250U with Radeon Graphics",
+    "logical_cpus": 4,
+    "platform": "Linux-7.2.8-200.fc44.x86_64-x86_64-with-glibc2.43",
+    "mem_total_gib": 5.66
+  },
+  "settings": {
+    "new_tokens": 16,
+    "repeats": 2,
+    "statistic": "median",
+    "warmup": 1,
+    "prompt": "synthetic ids, greedy, no EOS"
+  },
+  "cases": [
+    {
+      "threads": 1,
+      "prompt_len": 16,
+      "new_tokens": 16,
+      "repeats": 2,
+      "load_seconds": 2.81388,
+      "prefill_seconds": 1.38459,
+      "prefill_tokens_per_second": 11.5557,
+      "decode_tokens_per_second": 6.32483,
+      "peak_rss_gib": 2.23388,
+      "time_shares": {
+        "attention_projections": 0.3436,
+        "attention_core": 0.0049,
+        "mlp": 0.4806,
+        "lm_head": 0.1701,
+        "norms": 0.0009
+      }
+    },
+    {
+      "threads": 1,
+      "prompt_len": 128,
+      "new_tokens": 16,
+      "repeats": 2,
+      "load_seconds": 2.4112,
+      "prefill_seconds": 10.6774,
+      "prefill_tokens_per_second": 11.988,
+      "decode_tokens_per_second": 6.15008,
+      "peak_rss_gib": 2.27526,
+      "time_shares": {
+        "attention_projections": 0.3874,
+        "attention_core": 0.0221,
+        "mlp": 0.5407,
+        "lm_head": 0.049,
+        "norms": 0.0009
+      }
+    },
+    {
+      "threads": 2,
+      "prompt_len": 16,
+      "new_tokens": 16,
+      "repeats": 2,
+      "load_seconds": 2.3335,
+      "prefill_seconds": 0.839523,
+      "prefill_tokens_per_second": 19.0584,
+      "decode_tokens_per_second": 6.83038,
+      "peak_rss_gib": 2.23378,
+      "time_shares": {
+        "attention_projections": 0.3368,
+        "attention_core": 0.006,
+        "mlp": 0.4613,
+        "lm_head": 0.1948,
+        "norms": 0.0011
+      }
+    },
+    {
+      "threads": 2,
+      "prompt_len": 128,
+      "new_tokens": 16,
+      "repeats": 2,
+      "load_seconds": 2.20466,
+      "prefill_seconds": 6.77534,
+      "prefill_tokens_per_second": 18.892,
+      "decode_tokens_per_second": 6.62417,
+      "peak_rss_gib": 2.27523,
+      "time_shares": {
+        "attention_projections": 0.3906,
+        "attention_core": 0.0319,
+        "mlp": 0.511,
+        "lm_head": 0.0651,
+        "norms": 0.0015
+      }
+    },
+    {
+      "threads": 4,
+      "prompt_len": 16,
+      "new_tokens": 16,
+      "repeats": 2,
+      "load_seconds": 2.17125,
+      "prefill_seconds": 0.994013,
+      "prefill_tokens_per_second": 16.0964,
+      "decode_tokens_per_second": 6.65881,
+      "peak_rss_gib": 2.2339,
+      "time_shares": {
+        "attention_projections": 0.3458,
+        "attention_core": 0.0082,
+        "mlp": 0.4603,
+        "lm_head": 0.1841,
+        "norms": 0.0016
+      }
+    },
+    {
+      "threads": 4,
+      "prompt_len": 128,
+      "new_tokens": 16,
+      "repeats": 2,
+      "load_seconds": 2.23401,
+      "prefill_seconds": 5.48586,
+      "prefill_tokens_per_second": 23.3327,
+      "decode_tokens_per_second": 5.07673,
+      "peak_rss_gib": 2.27518,
+      "time_shares": {
+        "attention_projections": 0.3789,
+        "attention_core": 0.0529,
+        "mlp": 0.4809,
+        "lm_head": 0.0853,
+        "norms": 0.002
+      }
+    }
+  ]
+}

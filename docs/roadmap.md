@@ -90,7 +90,7 @@ tolerance; identical greedy tokens.
 - [x] Profiling of the C++ model (built-in per-part timers in `qwen3_bench`)
 - [x] C++ CPU optimisations with before/after measurements: weight-row reuse, SIMD-friendly
   dot product, OpenMP threads, `-march=native` (M4.1)
-- [ ] Same benchmark on the maintainer's laptop (`scripts/benchmark_cpp.py --download`)
+- [x] Same benchmark on the maintainer's laptop (`scripts/benchmark_cpp.py --download`)
 - [ ] bfloat16 weight storage in C++ (half the memory traffic per decoded token)
 - [ ] CUDA experiments
 - [ ] Reproducible benchmark reports (hardware, versions, commands, raw numbers)
