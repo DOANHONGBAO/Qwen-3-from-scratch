@@ -286,3 +286,31 @@ warm-up, 2 repeats (median), fixed threads, synthetic prompt ids, greedy decodin
 EOS ignored, and checkpoint download excluded. Uncached cases beyond the time budget
 are marked SKIPPED, never extrapolated. Cached vs uncached logits and tokens are
 compared for every case that ran both. **Accepted.**
+
+## D-041 · 2026-10-17 · C++ port: simple, dependency-free, float32
+The C++20 port uses one owning, always-contiguous row-major float32 `Tensor`
+(`reshape`/`transpose` copy), naive loops (`linear` = row-dot-row on the `[out, in]`
+checkpoint layout, no transpose) and plain classes with public weights named like the
+checkpoint. No BLAS, threads or SIMD until correctness is established (M4 measures
+optimisations). Weights are converted to float32 at load time (~2.4 GiB for 0.6B).
+Reference values come from the verified PyTorch modules through generated headers
+(`cpp/tests/*_reference.hpp`, 9 significant digits = exact float32 round trip), so
+CTest needs no Python. **Accepted.**
+
+## D-042 · 2026-10-17 · C++ checkpoint loading: own JSON + safetensors reader
+A minimal JSON parser reads `config.json`, the safetensors header and the index of
+sharded checkpoints. Tensors are read one at a time straight into the model's
+pre-allocated weights (BF16/F16 converted in 1M-element chunks), so peak memory is the
+float32 model plus one chunk. Loading is strict like D-033: every expected tensor
+exactly once with the right shape, unexpected names are errors, `lm_head.weight` is
+ignored when tied. The expected list is derived from the config and checked against
+the M2 fixture of the real checkpoint (310 tensors). The tokenizer stays in Python
+(`tokenizers`); `qwen3_run` takes token ids. **Accepted.**
+
+## D-043 · 2026-10-17 · C++ KV cache layout: time-major
+The C++ cache stores each layer as one `vector<float>` in `[S, B, Nkv, D]` order, so a
+decode step appends at the end (amortised O(1)) instead of copying the whole cache as
+`torch.cat` on `[B, Nkv, S, D]` does. Attention reads keys/values through
+`key(layer, j, b, h)`; without a cache it uses a temporary cache of the same layout, so
+there is a single attention code path. Rules match D-038 (append once per layer per
+forward, `commit`, `rollback`, `max_length`). **Accepted.**

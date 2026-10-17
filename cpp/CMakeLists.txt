@@ -21,12 +21,18 @@ option(QWEN3_BUILD_TESTS "Build C++ unit tests" ON)
 add_library(qwen3 
 src/config.cpp src/tensor.cpp src/ops.cpp src/rmsnorm.cpp src/swiglu.cpp
 src/rope.cpp
+src/json.cpp src/safetensors.cpp src/kv_cache.cpp src/attention.cpp
+src/decoder.cpp src/model.cpp src/generate.cpp
 )
 target_include_directories(qwen3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(qwen3 PUBLIC cxx_std_20)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(qwen3 PRIVATE -Wall -Wextra -Wpedantic -Wconversion)
 endif()
+
+# Command-line tool: load a Hugging Face checkpoint and run greedy generation.
+add_executable(qwen3_run tools/qwen3_run.cpp)
+target_link_libraries(qwen3_run PRIVATE qwen3)
 
 if(QWEN3_BUILD_TESTS)
   enable_testing()
@@ -56,4 +62,23 @@ if(QWEN3_BUILD_TESTS)
   target_link_libraries(test_rope PRIVATE qwen3)
   add_test(NAME rope.reference COMMAND test_rope)
 
-  endif()
+    add_executable(test_kv_cache tests/test_kv_cache.cpp)
+  target_link_libraries(test_kv_cache PRIVATE qwen3)
+  add_test(NAME kv_cache.rules COMMAND test_kv_cache)
+
+  add_executable(test_attention tests/test_attention.cpp)
+  target_link_libraries(test_attention PRIVATE qwen3)
+  add_test(NAME attention.reference COMMAND test_attention)
+
+  add_executable(test_safetensors tests/test_safetensors.cpp)
+  target_link_libraries(test_safetensors PRIVATE qwen3)
+  add_test(NAME safetensors.reader COMMAND test_safetensors)
+
+  add_executable(test_model tests/test_model.cpp)
+  target_link_libraries(test_model PRIVATE qwen3)
+  # Fixture of M2: names and shapes of every tensor in the real Qwen3-0.6B checkpoint
+  target_compile_definitions(test_model PRIVATE
+    QWEN3_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../tests/fixtures")
+  add_test(NAME model.reference COMMAND test_model)
+
+endif()

@@ -18,7 +18,11 @@ as a *reference* to verify numbers, never as the implementation.
 > tokenizer; its hidden states, logits and greedy tokens are compared with Hugging Face
 > on real prompts ([results](docs/progress.md)). **M2.2:** our own KV cache and
 > generation loop (greedy, temperature, top-k, top-p) with cached-vs-uncached
-> verification and CPU benchmarks. Next: the C++20 port (M3). See
+> verification and CPU benchmarks. **M3:** a C++20 port (`cpp/`, no dependencies) of the
+> whole model — tensor, ops, RMSNorm, SwiGLU, RoPE, GQA attention with QK-Norm, decoder,
+> safetensors loader, KV cache and greedy generation — checked against PyTorch
+> reference values in CTest and against the saved float32 Hugging Face run with
+> `scripts/verify_cpp_pretrained.py`. See
 > [docs/roadmap.md](docs/roadmap.md).
 
 ## Target model
@@ -109,7 +113,8 @@ conda activate qwen3-scratch
 python scripts/check_env.py        # environment report
 pytest                             # CPU test tier
 ruff check . && ruff format --check .
-bash scripts/build_cpp.sh          # optional: C++20 scaffold (needs cmake + g++)
+bash scripts/build_cpp.sh          # C++20 build + CTest (needs cmake + g++)
+python scripts/verify_cpp_pretrained.py --download   # C++ vs saved HF fp32 run (M3)
 ```
 
 Manual alternative and troubleshooting: [docs/environment.md](docs/environment.md).

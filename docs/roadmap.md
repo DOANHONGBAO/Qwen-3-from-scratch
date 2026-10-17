@@ -72,11 +72,13 @@ and recorded in `docs/progress.md`.
 
 ## M3 — C++20 CPU implementation
 
-- [ ] Tensor storage + minimal ops (row-major, fp32)
-- [ ] Ports of RMSNorm, SwiGLU, RoPE, QK-Norm, mask, GQA, block, model
-- [ ] Weight loading (safetensors reader or exported raw arrays)
-- [ ] Parity fixtures exported from Python, checked in CTest
-- [ ] KV cache and greedy generation, identical token IDs to Python
+- [x] Tensor storage + minimal ops (row-major, fp32)
+- [x] Ports of RMSNorm, SwiGLU, RoPE, QK-Norm, mask, GQA, block, model
+- [x] Weight loading (own JSON + safetensors reader: F32 / BF16 / F16, strict name map)
+- [x] Parity fixtures exported from Python, checked in CTest (`scripts/export_cpp_*_reference.py`)
+- [x] KV cache and greedy generation, identical token IDs to Python (tiny model, CTest)
+- [ ] Real Qwen3-0.6B-Base: C++ vs saved HF float32 run on the maintainer's laptop
+  (`scripts/verify_cpp_pretrained.py`)
 
 **Acceptance:** module-level and full-model parity with Python within fp32
 tolerance; identical greedy tokens.
