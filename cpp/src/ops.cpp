@@ -1,5 +1,9 @@
 #include "qwen3/ops.hpp"
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 static void check_same_shape(Tensor& a, Tensor& b, string op) {
     if (a.get_shape() != b.get_shape()) {
         throw invalid_argument(op + ": hai tensor phai cung shape");
@@ -101,6 +105,20 @@ Tensor matmul(Tensor& a, Tensor& b) {
 }
 
 
+float dot_product(float* a, float* b, int n) {
+    // 8 tong rieng (acc[0..7]) thay vi 1: cac phep cong khong phai cho nhau nua, va
+    // compiler gom 8 phep nhan-cong thanh 1-2 lenh SIMD (SSE/AVX). Thu tu cong khac
+    // vong lap don => ket qua co the lech bit cuoi so voi ban cu (sai so ~1e-7).
+    float acc[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    int k = 0;
+    for (; k + 8 <= n; k += 8) {
+        for (int u = 0; u < 8; u++) acc[u] += a[k + u] * b[k + u];
+    }
+    float s = ((acc[0] + acc[1]) + (acc[2] + acc[3])) + ((acc[4] + acc[5]) + (acc[6] + acc[7]));
+    for (; k < n; k++) s += a[k] * b[k];   // phan du khi n khong chia het cho 8
+    return s;
+}
+
 Tensor linear(Tensor& x, Tensor& w) {
     if (w.dim() != 2) throw invalid_argument("linear: w phai co shape [N, K]");
     if (x.dim() == 0) throw invalid_argument("linear: x phai co it nhat 1 chieu");
@@ -117,14 +135,32 @@ Tensor linear(Tensor& x, Tensor& w) {
     float* pw = w.data();
     float* po = out.data();
 
-    for (int r = 0; r < rows; r++) {
-        float* xr = px + r * K;
-        for (int n = 0; n < N; n++) {
-            float* wn = pw + n * K;
-            float acc = 0.0f;
-            for (int k = 0; k < K; k++) acc += xr[k] * wn[k];
-            po[r * N + n] = acc;
+    // Vong ngoai la hang n cua weight: moi hang w[n] (K so) duoc doc tu RAM 1 lan roi dung
+    // cho MOI hang cua x. Prefill (rows = T) khong phai doc lai ca ma tran weight T lan.
+    // Moi thread tinh 1 khoang n rieng => khong ghi chong len nhau, khong can khoa.
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static)
+#endif
+    for (int n = 0; n < N; n++) {
+        float* wn = pw + n * K;
+        for (int r = 0; r < rows; r++) {
+            po[r * N + n] = dot_product(px + r * K, wn, K);
         }
     }
     return out;
+}
+
+void set_num_threads(int n) {
+    if (n < 1) throw invalid_argument("set_num_threads: n phai >= 1");
+#ifdef _OPENMP
+    omp_set_num_threads(n);
+#endif
+}
+
+int get_num_threads() {
+#ifdef _OPENMP
+    return omp_get_max_threads();
+#else
+    return 1;
+#endif
 }

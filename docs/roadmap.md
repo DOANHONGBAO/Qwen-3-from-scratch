@@ -87,8 +87,12 @@ tolerance; identical greedy tokens.
 
 - [ ] Kaggle GPU smoke test executed (explicit objective approved)
 - [ ] Numerical parity analysis CPU vs GPU, fp32 vs bf16
-- [ ] Profiling (PyTorch profiler; `perf` for C++)
-- [ ] Optimisations (blocking, threading, SIMD; CUDA experiments) each with before/after measurements
+- [x] Profiling of the C++ model (built-in per-part timers in `qwen3_bench`)
+- [x] C++ CPU optimisations with before/after measurements: weight-row reuse, SIMD-friendly
+  dot product, OpenMP threads, `-march=native` (M4.1)
+- [ ] Same benchmark on the maintainer's laptop (`scripts/benchmark_cpp.py --download`)
+- [ ] bfloat16 weight storage in C++ (half the memory traffic per decoded token)
+- [ ] CUDA experiments
 - [ ] Reproducible benchmark reports (hardware, versions, commands, raw numbers)
 
 **Acceptance:** every reported number comes from a recorded, reproducible run.
