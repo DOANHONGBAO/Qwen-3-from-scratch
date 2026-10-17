@@ -10,8 +10,8 @@ public:
     Tensor(vector<int> shape);
     Tensor(vector<int> shape,vector<float> data);
 
-    vector<int> shape;
-    vector<int> strides;
+    vector<int> get_shape();
+    vector<int> get_strides();
     int dim();
     int numel();
     int size(int d);
