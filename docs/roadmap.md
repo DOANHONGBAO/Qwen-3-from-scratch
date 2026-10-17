@@ -77,7 +77,7 @@ and recorded in `docs/progress.md`.
 - [x] Weight loading (own JSON + safetensors reader: F32 / BF16 / F16, strict name map)
 - [x] Parity fixtures exported from Python, checked in CTest (`scripts/export_cpp_*_reference.py`)
 - [x] KV cache and greedy generation, identical token IDs to Python (tiny model, CTest)
-- [ ] Real Qwen3-0.6B-Base: C++ vs saved HF float32 run on the maintainer's laptop
+- [x] Real Qwen3-0.6B-Base: C++ vs saved HF float32 run on the maintainer's laptop
   (`scripts/verify_cpp_pretrained.py`)
 
 **Acceptance:** module-level and full-model parity with Python within fp32

@@ -28,11 +28,11 @@ observed. Nothing is listed as passed unless it was executed. Newest first.
 | Checkpoint loading round trip (safetensors F32), missing / wrong shape / extra tensor errors | sandbox | PASSED |
 | Name map vs the real Qwen3-0.6B-Base tensor list (M2 fixture, 310 tensors) | sandbox | PASSED |
 | Full 0.6B-shape **random synthetic** checkpoint (BF16), C++ vs our PyTorch, 2 prompts × 8 tokens | sandbox (2 vCPU) | PASSED — max \|Δlogit\| 8.6e-6, greedy identical; load 1.9 s, peak RSS 2.23 GiB, decode 1.8 tok/s (1 thread) |
-| Real Qwen3-0.6B-Base, C++ vs saved HF float32 run | maintainer's laptop | NOT RUN (to be run: `python scripts/verify_cpp_pretrained.py --download`) |
+| Real Qwen3-0.6B-Base (da87bfb), C++ vs saved HF float32 run (`scripts/verify_cpp_pretrained.py`), 5 prompts × 16 greedy tokens | maintainer's laptop (Ryzen 3 3250U, Fedora 44) | PASSED — max \|Δlogit\| 2.1–4.1e-4 (rel L2 4.5e-6–1.3e-5), argmax equal at every position, top-5 equal, greedy ids identical in 5/5; load 4.5 s, peak RSS 2.26 GiB, decode 1.87–1.89 tok/s (1 thread, naive loops); `results/m3/parity_cpp_float32.json` |
 
 ### Open items
-Real-checkpoint C++ parity on the laptop; tokenizer in C++ (not planned); BLAS /
-threads / SIMD (M4).
+Tokenizer in C++ (not planned); BLAS / threads / SIMD (M4): the PyTorch cached decode
+runs at 4.1–4.6 tok/s on the same laptop vs 1.9 tok/s for the naive C++.
 
 ## 2026-10-16 — M2.2: KV cache and efficient generation
 
