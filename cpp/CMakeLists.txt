@@ -18,7 +18,7 @@ option(QWEN3_BUILD_TESTS "Build C++ unit tests" ON)
 
 # Library: header-first design. Model kernels (RMSNorm, RoPE, GQA, ...) are added
 # in M3, one module per Python counterpart (see docs/architecture.md).
-add_library(qwen3 src/config.cpp)
+add_library(qwen3 src/config.cpp src/tensor.cpp)
 target_include_directories(qwen3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(qwen3 PUBLIC cxx_std_20)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -32,4 +32,9 @@ if(QWEN3_BUILD_TESTS)
   add_executable(test_config tests/test_config.cpp)
   target_link_libraries(test_config PRIVATE qwen3)
   add_test(NAME config.presets COMMAND test_config)
-endif()
+
+  add_executable(test_tensor tests/test_tensor.cpp)
+  target_link_libraries(test_tensor PRIVATE qwen3)
+  add_test(NAME tensor.basic COMMAND test_tensor)
+
+  endif()
