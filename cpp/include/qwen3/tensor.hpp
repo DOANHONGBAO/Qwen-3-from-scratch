@@ -34,4 +34,4 @@ private:
 
     void compute_strides();
     int offset(vector<int> indices);
-}
+};
