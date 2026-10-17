@@ -4,9 +4,9 @@
   "reference_file": "results/m2/reference_float32",
   "model_dir_name": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
   "atol_logits": 0.05,
-  "cpp_load_seconds": 4.53463,
-  "cpp_peak_rss_gib": 2.2614,
-  "wall_seconds": 66.9,
+  "cpp_load_seconds": 5.75774,
+  "cpp_peak_rss_gib": 2.26204,
+  "wall_seconds": 19.7,
   "machine": {
     "platform": "Linux-7.2.8-200.fc44.x86_64-x86_64-with-glibc2.43",
     "cpu_count": 4
@@ -15,9 +15,9 @@
     {
       "text": "Artificial intelligence is",
       "num_prompt_tokens": 4,
-      "max_abs_logit_diff": 0.0003147125244140625,
-      "mean_abs_logit_diff": 1.9582837921916507e-05,
-      "rel_l2_logit_diff": 8.431163223576732e-06,
+      "max_abs_logit_diff": 0.0003185272216796875,
+      "mean_abs_logit_diff": 1.8947288481285796e-05,
+      "rel_l2_logit_diff": 7.787365575495642e-06,
       "argmax_all_positions_equal": true,
       "top5_last_position_equal": true,
       "greedy_ids_equal": true,
@@ -57,16 +57,16 @@
         7703,
         18048
       ],
-      "cpp_prefill_seconds": 2.12964,
-      "cpp_decode_tokens_per_second": 1.88673,
+      "cpp_prefill_seconds": 0.241952,
+      "cpp_decode_tokens_per_second": 5.85574,
       "status": "PASSED"
     },
     {
       "text": "The capital of France is",
       "num_prompt_tokens": 5,
-      "max_abs_logit_diff": 0.000408172607421875,
-      "mean_abs_logit_diff": 2.8450091122067533e-05,
-      "rel_l2_logit_diff": 1.319556304224534e-05,
+      "max_abs_logit_diff": 0.00031280517578125,
+      "mean_abs_logit_diff": 1.7510838006273843e-05,
+      "rel_l2_logit_diff": 9.48102751863189e-06,
       "argmax_all_positions_equal": true,
       "top5_last_position_equal": true,
       "greedy_ids_equal": true,
@@ -106,16 +106,16 @@
         21718,
         13
       ],
-      "cpp_prefill_seconds": 2.64822,
-      "cpp_decode_tokens_per_second": 1.87634,
+      "cpp_prefill_seconds": 0.260774,
+      "cpp_decode_tokens_per_second": 6.72057,
       "status": "PASSED"
     },
     {
       "text": "Hà Nội là thủ đô của",
       "num_prompt_tokens": 7,
-      "max_abs_logit_diff": 0.0003204345703125,
-      "mean_abs_logit_diff": 1.7689009837340564e-05,
-      "rel_l2_logit_diff": 6.054109235265059e-06,
+      "max_abs_logit_diff": 0.00018596649169921875,
+      "mean_abs_logit_diff": 1.091826652555028e-05,
+      "rel_l2_logit_diff": 3.867226041620597e-06,
       "argmax_all_positions_equal": true,
       "top5_last_position_equal": true,
       "greedy_ids_equal": true,
@@ -155,16 +155,16 @@
         350,
         4076
       ],
-      "cpp_prefill_seconds": 3.72807,
-      "cpp_decode_tokens_per_second": 1.87418,
+      "cpp_prefill_seconds": 0.332362,
+      "cpp_decode_tokens_per_second": 6.72372,
       "status": "PASSED"
     },
     {
       "text": "def fibonacci(n):\n    ",
       "num_prompt_tokens": 5,
-      "max_abs_logit_diff": 0.00026251375675201416,
-      "mean_abs_logit_diff": 1.7881273379316553e-05,
-      "rel_l2_logit_diff": 7.7658496593358e-06,
+      "max_abs_logit_diff": 0.00019851326942443848,
+      "mean_abs_logit_diff": 1.2783429156115744e-05,
+      "rel_l2_logit_diff": 5.567375410464592e-06,
       "argmax_all_positions_equal": true,
       "top5_last_position_equal": true,
       "greedy_ids_equal": true,
@@ -204,16 +204,16 @@
         4409,
         308
       ],
-      "cpp_prefill_seconds": 2.66817,
-      "cpp_decode_tokens_per_second": 1.89045,
+      "cpp_prefill_seconds": 0.243428,
+      "cpp_decode_tokens_per_second": 6.71396,
       "status": "PASSED"
     },
     {
       "text": "1, 1, 2, 3, 5, 8, 13,",
       "num_prompt_tokens": 21,
-      "max_abs_logit_diff": 0.00020885467529296875,
-      "mean_abs_logit_diff": 9.904068065225147e-06,
-      "rel_l2_logit_diff": 4.522164545051055e-06,
+      "max_abs_logit_diff": 0.000141143798828125,
+      "mean_abs_logit_diff": 8.431338756054174e-06,
+      "rel_l2_logit_diff": 4.1167722883983515e-06,
       "argmax_all_positions_equal": true,
       "top5_last_position_equal": true,
       "greedy_ids_equal": true,
@@ -253,8 +253,8 @@
         24,
         11
       ],
-      "cpp_prefill_seconds": 11.0305,
-      "cpp_decode_tokens_per_second": 1.89327,
+      "cpp_prefill_seconds": 1.0233,
+      "cpp_decode_tokens_per_second": 6.681,
       "status": "PASSED"
     }
   ]

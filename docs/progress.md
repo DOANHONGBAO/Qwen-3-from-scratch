@@ -37,12 +37,29 @@ weights per token, so it is now close to memory-bandwidth bound.
 |---|---|---|
 | CTest (11 tests, incl. `threads.determinism`), 0 warnings; also with ASan/UBSan and with `QWEN3_OPENMP=OFF` | sandbox | PASSED |
 | Synthetic 0.6B parity after optimisation (native build), C++ vs our PyTorch | sandbox | PASSED — max \|Δlogit\| 5.8e-6, greedy identical |
-| Real Qwen3-0.6B-Base parity rerun after optimisation | maintainer's laptop | NOT RUN |
-| Benchmark on the maintainer's laptop | maintainer's laptop | NOT RUN |
+| Real Qwen3-0.6B-Base parity rerun after optimisation (portable build, 4 threads) | maintainer's laptop | PASSED — 5/5 prompts: max \|Δlogit\| 1.4–3.2e-4 (rel L2 3.9e-6–9.5e-6), argmax equal everywhere, greedy identical; decode 5.9–6.7 tok/s (was 1.9); `results/m3/parity_cpp_float32.json` |
+| Benchmark on the maintainer's laptop (`scripts/benchmark_cpp.py`, native build) | maintainer's laptop | RUN — see table below; `results/m4/benchmark_cpp.{json,csv}` |
+
+### Maintainer's laptop (AMD Ryzen 3 3250U, 2 cores / 4 threads, 5.66 GiB, GCC 16.2.1)
+Real Qwen3-0.6B-Base, `-march=native` + OpenMP, commit 9ff8f33, 16 new tokens, median of 2.
+
+| Threads | Prefill tok/s (P = 16 / 128) | Decode tok/s (P = 16 / 128) | Peak RSS |
+|---|---|---|---|
+| 1 | 11.6 / 12.0 | 6.32 / 6.15 | 2.23–2.28 GiB |
+| 2 | 19.1 / 18.9 | **6.83** / 6.62 | 2.23–2.28 GiB |
+| 4 | 16.1 / 23.3 | 6.66 / 5.08 | 2.23–2.28 GiB |
+
+Reading: decode is memory-bandwidth bound: one thread already reaches 6.3 tok/s and a
+second thread adds only 8 %, because every token streams all 2.4 GB of float32
+weights. 4 threads (SMT on 2 physical cores) do not help decode and hurt it at 128
+tokens. Prefill (compute bound) scales with real cores. For comparison, the M3 C++
+decoded 1.9 tok/s and our PyTorch model (cached, fp32, 2 threads) 4.1–4.6 tok/s on the
+same laptop (M2.2 benchmark; different tool, indicative only). Time shares (2 threads,
+P = 128): MLP 51 %, attention projections 39 %, LM head 7 %, attention core 3 %.
 
 ### Open items
-Laptop benchmark and parity rerun; bfloat16 weight storage; parallel attention core for
-long contexts.
+bfloat16 weight storage (halves the bytes read per token, the current limit); parallel
+attention core for long contexts.
 
 ## 2026-10-17 — M3: C++20 port of the full model
 
