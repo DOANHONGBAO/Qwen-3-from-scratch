@@ -2,16 +2,7 @@
 // Khong dung thu vien test: moi kiem tra sai se in ra "FAILED" va dem loi.
 // Chuong trinh tra ve 0 neu moi kiem tra deu dung -> CTest bao PASSED.
 #include "qwen3/tensor.hpp"
-
-int failures = 0;
-
-// Kiem tra mot dieu kien. Neu sai: in ten kiem tra va tang bien dem loi.
-void check(bool condition, string what) {
-    if (!condition) {
-        cout << "FAILED: " << what << "\n";
-        failures++;
-    }
-}
+#include "test_utils.hpp"
 
 // Tao tensor co gia tri 0, 1, 2, ... theo thu tu bo nho (giong torch.arange).
 Tensor arange(vector<int> shape) {
@@ -112,18 +103,6 @@ void test_empty_and_scalar() {
     check(s.numel() == 1 && s.dim() == 0, "shape {} -> 1 phan tu (scalar)");
 }
 
-// Kiem tra mot doan code co nem exception kieu E hay khong.
-template <typename E, typename F>
-void check_throws(F code, string what) {
-    try {
-        code();
-    } catch (const E&) {
-        return;   // dung: da nem loi dung kieu
-    }
-    cout << "FAILED (khong nem loi): " << what << "\n";
-    failures++;
-}
-
 void test_invalid_inputs() {
     check_throws<invalid_argument>([] { Tensor t({2, -1}); }, "kich thuoc am");
     check_throws<invalid_argument>([] { Tensor t({2, 2}, {1, 2, 3}); }, "data thieu phan tu");
@@ -147,11 +126,5 @@ int main() {
     test_transpose_3d_all_elements();
     test_empty_and_scalar();
     test_invalid_inputs();
-
-    if (failures == 0) {
-        cout << "test_tensor: tat ca kiem tra deu dung\n";
-        return 0;
-    }
-    cout << "test_tensor: " << failures << " kiem tra SAI\n";
-    return 1;
+    return report("test_tensor");
 }

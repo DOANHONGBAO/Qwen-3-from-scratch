@@ -72,7 +72,7 @@ if(QWEN3_BUILD_TESTS)
 
   add_executable(test_rmsnorm tests/test_rmsnorm.cpp)
   target_link_libraries(test_rmsnorm PRIVATE qwen3)
-  add_test(NAME rmsnorm.basic COMMAND test_rmsnorm)
+  add_test(NAME rmsnorm.reference COMMAND test_rmsnorm)
 
   add_executable(test_swiglu tests/test_swiglu.cpp)
   target_link_libraries(test_swiglu PRIVATE qwen3)

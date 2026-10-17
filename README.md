@@ -141,9 +141,10 @@ training is out of scope. GPU work is optional and runs on Kaggle ([docs/kaggle.
 src/qwen3_scratch/   Python package (one module per model component)
 tests/               pytest suite (CPU / GPU / weights tiers)
 configs/             model presets + official HF config copy
-cpp/                 C++20 port (CMake + CTest)
-scripts/             environment, C++ build, Kaggle auth, M2 parity/inference/benchmark
-results/m2/          small JSON/CSV/PNG results of the M2 runs (no tensors, no weights)
+cpp/                 C++20 port: include/ src/ (library), tests/ (CTest), tools/ (qwen3_run, qwen3_bench)
+scripts/             environment, builds, Kaggle auth, parity / inference / benchmark scripts,
+                     C++ reference exporters (export_cpp_*_reference.py)
+results/m2..m4/      small JSON/CSV/PNG results of the runs (no tensors, no weights)
 kaggle/              Kaggle kernel templates (never auto-pushed)
 notebooks/           explanatory notebooks
 docs/                roadmap, architecture, environment, references, decisions, progress

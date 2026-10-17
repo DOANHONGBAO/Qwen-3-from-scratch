@@ -33,6 +33,18 @@ M3 C++20 CPU port → M4 GPU experiments/benchmarks. Status: `docs/roadmap.md`.
   example, unit tests (shapes, values, determinism, invalid inputs), reference
   comparison where possible, and "common mistakes" notes.
 
+## C++ code style (`cpp/`)
+- Keep the maintainer's style: plain `class`es with public members, `std::vector`,
+  `int` sizes, `#include <bits/stdc++.h>` and `using namespace std;` (via `tensor.hpp`).
+  No new namespaces, templates-heavy code, `[[nodiscard]]`, `span` or similar.
+- Comments in Vietnamese without diacritics, like the existing files.
+- One module = `include/qwen3/<m>.hpp` + `src/<m>.cpp` + `tests/test_<m>.cpp` (+ a
+  generated `tests/<m>_reference.hpp` from `scripts/export_cpp_<m>_reference.py`),
+  registered in `cpp/CMakeLists.txt`. Shared test helpers: `tests/test_utils.hpp`.
+- No external dependencies except OpenMP (optional). Every optimisation is measured
+  with `qwen3_bench` before and after, and must keep CTest and
+  `scripts/verify_cpp_pretrained.py` passing.
+
 ## Testing
 - `pytest` (markers: `gpu`, `weights`, `slow`; GPU/weights tiers auto-skip).
 - Fixed seeds; explicit `rtol`/`atol`; use `torch.testing.assert_close`.
@@ -49,7 +61,7 @@ M3 C++20 CPU port → M4 GPU experiments/benchmarks. Status: `docs/roadmap.md`.
 - Measure RAM before loading (`scripts/hardware_report.py`); never hold two fp32
   0.6B models at once on the 5.7 GiB laptop. Kaggle (`kaggle/qwen3_inference/`) only
   when the local run is not safe, and only with an explicit objective.
-- Commit only small result files (`results/m2/*.json|csv|png`), never tensors or logs.
+- Commit only small result files (`results/m*/*.json|csv|png`), never tensors or logs.
 
 ## Secrets
 Never read, print, copy or commit credentials (Kaggle, GitHub, HF). Kaggle auth

@@ -3,7 +3,8 @@
 This document describes the Qwen3 dense architecture as implemented in this
 repository, the module boundaries shared by Python and C++, and the testing
 conventions. The PyTorch implementation is complete through M2 (official weights,
-tokenizer, KV cache, generation); the C++ port is M3. Each section lists the
+tokenizer, KV cache, generation); the C++20 port (M3) runs the official checkpoint
+with greedy generation, and M4.1 optimised it for the CPU. Each section lists the
 milestone that delivers it.
 
 Notation: `B` batch, `T` new tokens in this forward pass, `S` total key length
@@ -69,25 +70,26 @@ Qwen3-specific details to get right:
 
 ## 3. Module map: Python ↔ C++
 
-Each Python module has exactly one planned C++ counterpart so that parity tests
-can be written module-by-module.
+Each Python module has one C++ counterpart (or none, for Python-only tooling) so that
+parity tests are written module by module.
 
 | Python (`src/qwen3_scratch/`) | C++ (`cpp/`) | Status |
 |---|---|---|
-| `config.py` — `Qwen3Config`, presets | `include/qwen3/config.hpp`, `src/config.cpp` | **M0: done** |
-| `env.py` — environment checks | — (Python tooling only) | **M0: done** |
-| `layers/rmsnorm.py` — `RMSNorm`, `rms_norm`, `rms_norm_textbook` | `include/qwen3/rmsnorm.hpp` (requirements: [rmsnorm.md §9](components/rmsnorm.md#9-requirements-for-the-c20-port-m3)) | **M1.1: done** / M3 |
-| `layers/swiglu.py` — `SwiGLUFeedForward`, `swiglu_textbook`, `silu_textbook` | `include/qwen3/swiglu.hpp` (requirements: [swiglu.md §10](components/swiglu.md#10-requirements-for-the-c20-port-m3)) | **M1.2: done** / M3 |
-| `layers/rope.py` — `RotaryEmbedding`, `apply_rope`, `apply_rope_to_qk`, `rope_cos_sin`, `compute_inv_freq`, `make_position_ids` | `include/qwen3/rope.hpp` (requirements: [rope.md §12](components/rope.md#12-requirements-for-the-c20-port-m3)) | **M1.3: done** / M3 |
-| `layers/qk_norm.py` — `QKNorm`, `apply_qk_norm` | part of `include/qwen3/attention.hpp` | **M1.4: done** / M3 |
-| `layers/attention.py` — `GroupedQueryAttention`, `repeat_kv`, `query_to_kv_head`, `causal_mask`, `attention_softmax` | `include/qwen3/attention.hpp` (requirements: [attention.md §9](components/attention.md#9-requirements-for-the-c20-port-m3)) | **M1.4: done** / M3 |
-| `layers/decoder.py` — `Qwen3DecoderLayer`, `DecoderTrace` | `include/qwen3/decoder.hpp` | **M1.5: done** / M3 |
-| `model.py` — `Qwen3Model`, `Qwen3ForCausalLM` (`use_cache`, `past_key_values`, `logits_to_keep`); `loss.py` — `causal_lm_loss` | `include/qwen3/model.hpp` (contract: [model.md §8](components/model.md#8-c20-port-contract-m3)) | **M1.6 / M2.2: done** / M3 |
-| `weight_loader.py` — `build_name_map`, `expected_shapes`, `SafetensorsCheckpoint`, `load_into_model`; `pretrained.py` — `load_pretrained`, `download_checkpoint` | `include/qwen3/weights.hpp` (contract: `tests/fixtures/checkpoint_name_map.json`) | **M2.1: done** / M3 |
-| `tokenizer.py` — `Qwen3Tokenizer` (adapter over `tokenizers`) | reuse the Python tokenizer at first; a C++ BPE later | **M2.1: done** / M3+ |
-| `kv_cache.py` — `KVCache`, `kv_cache_bytes` | `include/qwen3/kv_cache.hpp` (contract: [kv_cache.md §9](components/kv_cache.md#9-c-contract), `kv_cache_tiny.json`) | **M2.2: done** / M3 |
-| `generation.py` — `generate`, `GenerationConfig`, `select_next_token`, `apply_top_k`, `apply_top_p`, `greedy_generate` | `include/qwen3/generate.hpp` (contract: `sampling_small.json`) | **M2.2: done** / M3 |
-| `sysinfo.py`, `synthetic.py` — machine probes, random-weight checkpoints for dry runs | — (Python tooling only) | **M2: done** |
+| `config.py` — `Qwen3Config`, presets | `config.hpp/.cpp` (`qwen3::Config`), `config_from_json` in `model.cpp` | **done** (M0 / M3) |
+| `env.py` — environment checks | — (Python tooling only) | **done** (M0) |
+| — (torch tensors) | `tensor.hpp/.cpp` (owning, contiguous, row-major fp32), `ops.hpp/.cpp` | **done** (M3, M4.1) |
+| `layers/rmsnorm.py` — `RMSNorm` | `rmsnorm.hpp/.cpp` (`RMSNorm`) | **done** (M1.1 / M3) |
+| `layers/swiglu.py` — `SwiGLUFeedForward` | `swiglu.hpp/.cpp` (`SwiGLU`) | **done** (M1.2 / M3) |
+| `layers/rope.py` — `RotaryEmbedding`, `apply_rope` | `rope.hpp/.cpp` (`RoPE`, split-half) | **done** (M1.3 / M3) |
+| `layers/qk_norm.py` — `QKNorm` | inside `Attention` (`q_norm`, `k_norm` are `RMSNorm(head_dim)`) | **done** (M1.4 / M3) |
+| `layers/attention.py` — `GroupedQueryAttention` | `attention.hpp/.cpp` (`Attention`) | **done** (M1.4 / M3) |
+| `layers/decoder.py` — `Qwen3DecoderLayer` | `decoder.hpp/.cpp` (`DecoderLayer`) | **done** (M1.5 / M3) |
+| `model.py` — `Qwen3Model`, `Qwen3ForCausalLM` | `model.hpp/.cpp` (`Qwen3Model`, tied/untied head, `last_only`) | **done** (M1.6 / M3) |
+| `weight_loader.py`, `pretrained.py` | `json.hpp/.cpp`, `safetensors.hpp/.cpp`, `load_pretrained` in `model.cpp` (contract: `tests/fixtures/checkpoint_name_map.json`) | **done** (M2.1 / M3) |
+| `tokenizer.py` — `Qwen3Tokenizer` | — : the C++ tools take token ids; Python tokenises (`scripts/verify_cpp_pretrained.py`) | **done** (M2.1); C++ BPE not planned |
+| `kv_cache.py` — `KVCache` | `kv_cache.hpp/.cpp` (`KVCache`, time-major `[S, B, Nkv, D]`, D-043) | **done** (M2.2 / M3) |
+| `generation.py` — `generate`, sampling | `generate.hpp/.cpp` (`greedy_generate`; sampling not ported) | **done** (M2.2 / M3, greedy only) |
+| `sysinfo.py`, `synthetic.py` | `profiler.hpp/.cpp`; tools `cpp/tools/qwen3_run.cpp`, `qwen3_bench.cpp` | **done** (M2 / M4.1) |
 
 Boundaries:
 
@@ -99,8 +101,9 @@ Boundaries:
   `v_proj`, `o_proj`, `q_norm`, `k_norm`, `gate_proj`, `up_proj`, `down_proj`,
   `input_layernorm`, `post_attention_layernorm`, `embed_tokens`, `norm`) to make
   weight loading a near-identity mapping. (Decision D-005.)
-- Tensors cross the Python→C++ boundary only as files of raw arrays plus a JSON
-  manifest (format to be decided in M3); no pybind dependency is assumed.
+- Tensors cross the Python→C++ boundary only as files: checkpoints as safetensors,
+  reference values as generated C++ headers (`cpp/tests/*_reference.hpp`), C++ logits
+  as raw float32 files read back by Python. No pybind dependency (D-041, D-042).
 
 ## 4. Configuration
 
@@ -128,6 +131,10 @@ Presets: `TINY_QWEN3` (component unit tests, `head_dim ≠ H/N`), `QWEN3_TINY`
   `QWEN3_WEIGHTS_DIR`; `slow` = opt-out with `-m "not slow"`.
 - Reference comparisons against `transformers` (M2) are marked `weights` or use
   randomly initialised tiny HF models, and live in `tests/parity/`.
-- C++ tests are CTest executables; parity fixtures are exported from Python
-  (`scripts/export_fixtures.py` → small exact-float32 JSON files in
-  `tests/fixtures/`, kept current by `tests/test_fixtures.py`).
+- C++ tests are CTest executables without a test framework (shared helpers in
+  `cpp/tests/test_utils.hpp`). Reference values come from the verified PyTorch
+  modules through generated headers (`scripts/export_cpp_*_reference.py` →
+  `cpp/tests/*_reference.hpp`). The JSON fixtures of `scripts/export_fixtures.py`
+  (`tests/fixtures/`, kept current by `tests/test_fixtures.py`) are a
+  language-neutral record of the Python modules; the C++ tests read only
+  `checkpoint_name_map.json` from them.
